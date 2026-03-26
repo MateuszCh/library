@@ -1,0 +1,35 @@
+@use './typography.scss';
+
+.listing {
+    margin-top: 16px;
+}
+
+.listing-search {
+    width: 100%;
+    padding: 16px;
+    border: 1px solid white;
+    border-radius: 16px;
+    font-size: 16px;
+    color: inherit;
+    background: white;
+    outline: none;
+    box-shadow: none;
+    border-color: white;
+    @extend .inter-regular;
+}
+
+.listing-results {
+    margin-top: 16px;
+    margin-bottom: 16px;
+    list-style: none;
+}
+
+.listing-results-item {
+    padding: 12px;
+    background-color: white;
+    border-radius: 8px;
+}
+
+.listing-results-item:not(:last-child) {
+    margin-bottom: 12px;
+}

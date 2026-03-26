@@ -2,8 +2,8 @@ const express = require('express');
 const config = require('./config.json');
 const MongoClient = require('mongodb').MongoClient;
 const path = require('path');
-
 const app = express();
+
 app.set('port', process.env.PORT || 3000);
 
 let db;
@@ -31,6 +31,25 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/api', (req, res, next) => {
+    const requestOrigin = req.get('origin');
+    if (!requestOrigin) {
+        next();
+        return;
+    }
+
+    const host = req.get('host');
+    const protocol = req.get('x-forwarded-proto') || req.protocol;
+    const currentOrigin = `${protocol}://${host}`;
+
+    if (requestOrigin !== currentOrigin) {
+        res.status(403).json({ error: 'Forbidden origin' });
+        return;
+    }
+
+    next();
+});
+
+app.use('/api', (req, res, next) => {
     if (databaseError) {
         res.status(503).json({ error: 'Resource unavailable' });
     } else {
@@ -52,10 +71,10 @@ app.get('/api/type/:type', (req, res, next) => {
 const uploadsPath = config.uploadsPath;
 
 app.use('/uploads', express.static(`${__dirname}/${uploadsPath}`));
-// app.use('/', express.static(`${__dirname}/front/public`));
-// app.get(['*'], (req, res) =>
-//     res.sendFile(path.resolve(`${__dirname}/front/public/index.html`))
-// );
+app.use('/', express.static(`${__dirname}/front/dist`));
+app.get(/.*/, (req, res) =>
+    res.sendFile(path.resolve(`${__dirname}/front/dist/index.html`))
+);
 
 app.use((err, req, res, next) => {
     console.log(err);
