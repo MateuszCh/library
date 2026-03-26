@@ -8,6 +8,10 @@ $record-item-left-width: 100px;
     background-color: white;
 }
 
+.record-item:hover .record-item-image-back {
+    opacity: 1;
+}
+
 .record-item-left {
     width: $record-item-left-width;
     height: $record-item-left-width;
@@ -18,6 +22,17 @@ $record-item-left-width: 100px;
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+.record-item-image-back {
+    @extend .record-item-image;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    top: 0;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
 }
 
 .record-item-right {

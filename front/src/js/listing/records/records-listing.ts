@@ -22,6 +22,13 @@ export class RecordsListing extends Listing<RecordModel> {
             recordItemImage.src = model.cover;
             recordItemLeft.appendChild(recordItemImage);
         }
+        const backCover = model.backCover;
+        if (backCover) {
+            const recordItemImage = document.createElement('img');
+            recordItemImage.classList.add('record-item-image-back');
+            recordItemImage.src = model.backCover;
+            recordItemLeft.appendChild(recordItemImage);
+        }
         const recordItemRight = document.createElement('div');
         recordItemRight.classList.add('record-item-right');
         recordItemRight.innerHTML = `
@@ -79,7 +86,8 @@ export class RecordsListing extends Listing<RecordModel> {
                 return (
                     model.title?.toLowerCase().includes(searchValue) ||
                     model.artist?.toLowerCase().includes(searchValue) ||
-                    model.genres?.toLowerCase().includes(searchValue)
+                    model.genres?.toLowerCase().includes(searchValue) ||
+                    model.releaseYear?.toLowerCase().includes(searchValue)
                 );
             });
         }

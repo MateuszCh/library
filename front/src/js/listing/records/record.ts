@@ -21,6 +21,7 @@ export class RecordModel extends LibraryItemModel<IRecordLibraryItem> {
     releaseDate?: Date;
     releaseDateFormatted?: string;
     genres?: string;
+    releaseYear?: string;
 
     constructor(data: IRecordLibraryItem) {
         super(data);
@@ -34,11 +35,18 @@ export class RecordModel extends LibraryItemModel<IRecordLibraryItem> {
         this.releaseDateFormatted = this.releaseDate
             ? this.formatDate(this.releaseDate)
             : undefined;
+        this.releaseYear = this.releaseDate
+            ? this.releaseDate.getFullYear().toString()
+            : undefined;
         this.genres = this.getFormattedGenres();
     }
 
     get cover(): string | undefined {
         return this.data?.data?.cover;
+    }
+
+    get backCover(): string | undefined {
+        return this.data?.data?.back_cover;
     }
 
     get title(): string | undefined {

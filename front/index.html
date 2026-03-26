@@ -23,13 +23,15 @@
         <h1 style="text-align: center; font-size: 64px;"
             class="pacifico-regular">Library</h1>
         <div class="listing">
-            <form>
+            <form class="form"
+                  id="form-panel"
+                  method="POST">
                 <input type="text"
                        class="listing-search"
                        id="listing-search"
                        style="width: 100%;"
                        name="title"
-                       placeholder="Title, artist, album, etc." />
+                       placeholder="Title, artist, album, release year, etc." />
             </form>
             <ul id="listing-results"
                 class="listing-results">
