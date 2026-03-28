@@ -1,8 +1,6 @@
-@use './components/typography.scss';
-@use './components/listing.scss';
-@use './components/colors.scss' as colors;
-@use './components/record-item.scss';
-@use './components/form.scss';
+@forward './components/index';
+
+@use './abstracts/colors';
 
 * {
     box-sizing: border-box;

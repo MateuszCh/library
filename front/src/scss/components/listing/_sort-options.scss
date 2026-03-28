@@ -1,0 +1,90 @@
+@use '../../abstracts/colors' as colors;
+@use '../../abstracts/typography';
+
+.listing-sort-options {
+    display: flex;
+    position: relative;
+}
+
+.listing-sort-options-button {
+    padding: 0 15px;
+    background-color: white;
+    border: 1px solid white;
+    @extend .inter-regular;
+    cursor: pointer;
+    border: none;
+    white-space: nowrap;
+    margin-left: 8px;
+    border-radius: 16px;
+    font-size: 14px;
+    transition: background-color 0.1s ease-in-out;
+}
+
+.listing-sort-options-button svg {
+    transition: stroke 0.1s ease-in-out;
+    position: relative;
+    top: 2px;
+}
+
+.listing-sort-options-button:hover {
+    background-color: colors.$primary-darker !important;
+    svg {
+        stroke: white;
+    }
+}
+
+.listing-sort-options-button-active {
+    background-color: colors.$primary-dark;
+    svg {
+        stroke: white;
+    }
+}
+
+.listing-sort-options-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    width: auto;
+    background-color: white;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    pointer-events: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.listing-sort-options-list-visible {
+    pointer-events: auto;
+    opacity: 1;
+}
+
+.listing-sort-options-list-item {
+    width: 100%;
+}
+
+.listing-sort-options-list-item-button {
+    width: 100%;
+    text-align: right;
+    padding: 8px;
+    @extend .inter-regular;
+    white-space: nowrap;
+    background: white;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.1s ease-in-out, color 0.1s ease-in-out;
+}
+
+.listing-sort-options-list-item-button:hover {
+    background: colors.$primary-darker;
+    color: white;
+}
+
+.listing-sort-options-list-item-button-active {
+    background: colors.$primary-dark;
+    color: white;
+}

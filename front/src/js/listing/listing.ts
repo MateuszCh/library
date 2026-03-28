@@ -2,29 +2,45 @@ import type {
     ILibraryItem,
     LibraryItemModel
 } from './library-item/library-item';
+import { type ISortOptionConfig } from './sort-option/sort-option';
+import { SortOptions } from './sort-option/sort-options';
 
-const STORAGE_KEY = 'listing-search-value';
+const SEARCH_STORAGE_KEY = 'listing-search-value';
 
 export abstract class Listing<T extends LibraryItemModel<ILibraryItem>> {
-    protected abstract type: string;
+    abstract type: string;
     private resultsContainer: HTMLElement;
     private search: HTMLInputElement;
+    private sortOptionsContainer?: HTMLElement;
     private searchEventListener?: EventListener;
 
-    protected models: T[] = [];
-    private allModels: T[] = [];
+    protected sortOptionsConfigs: ISortOptionConfig[] = [];
 
-    constructor(resultsContainer: HTMLElement, search: HTMLInputElement) {
+    private models: T[] = [];
+    private allModels: T[] = [];
+    private sortOptions?: SortOptions<T>;
+
+    protected abstract modelConstructor: new (data: ILibraryItem) => T;
+
+    constructor(
+        resultsContainer: HTMLElement,
+        search: HTMLInputElement,
+        sortOptionsContainer?: HTMLElement
+    ) {
         this.resultsContainer = resultsContainer;
         this.search = search;
+        this.sortOptionsContainer = sortOptionsContainer;
         if (search) {
-            const searchValue = window.localStorage.getItem(STORAGE_KEY);
+            const searchValue = window.localStorage.getItem(SEARCH_STORAGE_KEY);
             if (searchValue) {
                 search.value = searchValue;
             }
             search.focus();
             const eventListener = () => {
-                window.localStorage.setItem(STORAGE_KEY, this.searchValue);
+                window.localStorage.setItem(
+                    SEARCH_STORAGE_KEY,
+                    this.searchValue
+                );
                 this.updateResults();
             };
             search.addEventListener('input', eventListener);
@@ -33,8 +49,17 @@ export abstract class Listing<T extends LibraryItemModel<ILibraryItem>> {
     }
 
     async init() {
+        this.sortOptions = new SortOptions(
+            this.sortOptionsConfigs,
+            this,
+            this.sortOptionsContainer
+        );
         const items = await this.loadItems();
         this.allModels = items.map(i => this.createModel(i));
+        this.updateResults();
+    }
+
+    onSortUpdate(): void {
         this.updateResults();
     }
 
@@ -43,6 +68,7 @@ export abstract class Listing<T extends LibraryItemModel<ILibraryItem>> {
             this.search.removeEventListener('input', this.searchEventListener);
             this.searchEventListener = undefined;
         }
+        this.sortOptions?.clear();
     }
 
     private updateResults(): void {
@@ -55,34 +81,38 @@ export abstract class Listing<T extends LibraryItemModel<ILibraryItem>> {
         }
     }
 
-    protected applySearch(models: T[]): T[] {
-        return [...models];
+    private applySearch(models: T[]): T[] {
+        const searchValue = this.searchValue?.trim()?.toLowerCase();
+        if (searchValue && typeof searchValue === 'string') {
+            return models.filter(m => m.search(searchValue));
+        }
+        return models;
     }
 
     private applyFilters(models: T[]): T[] {
         return this.applySearch(models);
     }
 
-    protected applySort(models: T[]): T[] {
-        return [...models];
+    private applySort(models: T[]): T[] {
+        return this.sortOptions?.sort(models) || models;
     }
 
-    protected renderResults(): void {
+    private renderResults(): void {
         this.clearResults();
         const listingResults = this.resultsContainer;
         if (listingResults) {
             this.models.forEach(model => {
                 const listingResultsItem = document.createElement('li');
                 listingResultsItem.classList.add('listing-results-item');
-                listingResultsItem.appendChild(this.renderResultItem(model));
+                listingResultsItem.appendChild(model.render());
                 listingResults.appendChild(listingResultsItem);
             });
         }
     }
 
-    protected abstract renderResultItem(model: T): HTMLElement;
-
-    protected abstract createModel(item: ILibraryItem): T;
+    private createModel(item: ILibraryItem): T {
+        return new this.modelConstructor(item);
+    }
 
     private async loadItems(): Promise<ILibraryItem[]> {
         try {
@@ -97,7 +127,7 @@ export abstract class Listing<T extends LibraryItemModel<ILibraryItem>> {
         this.resultsContainer.innerHTML = '';
     }
 
-    protected get searchValue(): string {
+    private get searchValue(): string {
         return (this.search?.value?.trim() || '').toLowerCase();
     }
 }

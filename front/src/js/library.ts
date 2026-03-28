@@ -3,6 +3,7 @@ import { RecordsListing } from './listing/records/records-listing';
 export class Library {
     private listingSearch: HTMLInputElement;
     private listingResults: HTMLDivElement;
+    private listingSortOptions: HTMLDivElement;
 
     constructor() {
         this.listingSearch = document.getElementById(
@@ -10,6 +11,9 @@ export class Library {
         ) as HTMLInputElement;
         this.listingResults = document.getElementById(
             'listing-results'
+        ) as HTMLDivElement;
+        this.listingSortOptions = document.getElementById(
+            'listing-sort-options'
         ) as HTMLDivElement;
     }
 
@@ -20,7 +24,8 @@ export class Library {
     private async initListing(): Promise<void> {
         const listing = new RecordsListing(
             this.listingResults,
-            this.listingSearch
+            this.listingSearch,
+            this.listingSortOptions
         );
         await listing.init();
     }

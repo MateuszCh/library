@@ -1,7 +1,7 @@
-@use './colors.scss' as colors;
+@use '../abstracts/colors' as colors;
 
 .form {
-    display: block;
+    display: flex;
     padding-top: 16px;
     padding-bottom: 16px;
     position: sticky;

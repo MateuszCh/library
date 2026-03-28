@@ -1,4 +1,6 @@
-export interface ILibraryItem<T extends {} = {}> {
+export interface ILibraryItem<
+    T extends { [key: string]: any } = { [key: string]: any }
+> {
     created: number;
     title: string;
     type: string;
@@ -7,8 +9,8 @@ export interface ILibraryItem<T extends {} = {}> {
     data: T;
 }
 
-export abstract class LibraryItemModel<T extends ILibraryItem> {
-    protected data: T;
+export abstract class LibraryItemModel<T extends ILibraryItem = ILibraryItem> {
+    readonly data: T;
 
     constructor(data: T) {
         this.data = data;
@@ -17,4 +19,8 @@ export abstract class LibraryItemModel<T extends ILibraryItem> {
     get id(): number {
         return this.data.id;
     }
+
+    abstract render(): HTMLElement;
+
+    abstract search(searchValue: string): boolean;
 }

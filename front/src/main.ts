@@ -5,7 +5,7 @@ const library = new Library();
 
 library.init();
 
-const formPanel = document.getElementById('form-panel');
+const formPanel = document.getElementById('form');
 if (formPanel && typeof IntersectionObserver !== 'undefined') {
     const sentinel = document.createElement('div');
     sentinel.setAttribute('aria-hidden', 'true');
