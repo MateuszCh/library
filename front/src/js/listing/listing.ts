@@ -7,12 +7,21 @@ import { SortOptions } from './sort-option/sort-options';
 
 const SEARCH_STORAGE_KEY = 'listing-search-value';
 
+const LISTING_SEARCH_ID = 'listing-search';
+const LISTING_RESULTS_ID = 'listing-results';
+const LISTING_SORT_OPTIONS_ID = 'listing-sort-options';
+const LISTING_COUNT_ID = 'listing-count';
+const TITLE_ID = 'title';
+const CONTAINER_ID = 'container';
+
 export abstract class Listing<T extends LibraryItemModel<ILibraryItem>> {
     abstract type: string;
-    private resultsContainer: HTMLElement;
-    private search: HTMLInputElement;
+    protected abstract title: string;
+    private resultsContainer?: HTMLElement;
+    private search?: HTMLInputElement;
     private sortOptionsContainer?: HTMLElement;
     private searchEventListener?: EventListener;
+    private listingCountContainer?: HTMLElement;
 
     protected sortOptionsConfigs: ISortOptionConfig[] = [];
 
@@ -22,20 +31,22 @@ export abstract class Listing<T extends LibraryItemModel<ILibraryItem>> {
 
     protected abstract modelConstructor: new (data: ILibraryItem) => T;
 
-    constructor(
-        resultsContainer: HTMLElement,
-        search: HTMLInputElement,
-        sortOptionsContainer?: HTMLElement
-    ) {
-        this.resultsContainer = resultsContainer;
-        this.search = search;
-        this.sortOptionsContainer = sortOptionsContainer;
-        if (search) {
+    constructor() {
+        this.resultsContainer =
+            document.getElementById(LISTING_RESULTS_ID) || undefined;
+        this.search =
+            (document.getElementById(LISTING_SEARCH_ID) as HTMLInputElement) ||
+            undefined;
+        this.sortOptionsContainer =
+            document.getElementById(LISTING_SORT_OPTIONS_ID) || undefined;
+        this.listingCountContainer =
+            document.getElementById(LISTING_COUNT_ID) || undefined;
+        if (this.search) {
             const searchValue = window.localStorage.getItem(SEARCH_STORAGE_KEY);
             if (searchValue) {
-                search.value = searchValue;
+                this.search.value = searchValue;
             }
-            search.focus();
+            this.search.focus();
             const eventListener = () => {
                 window.localStorage.setItem(
                     SEARCH_STORAGE_KEY,
@@ -43,12 +54,16 @@ export abstract class Listing<T extends LibraryItemModel<ILibraryItem>> {
                 );
                 this.updateResults();
             };
-            search.addEventListener('input', eventListener);
+            this.search.addEventListener('input', eventListener);
             this.searchEventListener = eventListener;
         }
     }
 
     async init() {
+        const title = document.getElementById(TITLE_ID);
+        if (title) {
+            title.innerHTML = this.title;
+        }
         this.sortOptions = new SortOptions(
             this.sortOptionsConfigs,
             this,
@@ -57,6 +72,10 @@ export abstract class Listing<T extends LibraryItemModel<ILibraryItem>> {
         const items = await this.loadItems();
         this.allModels = items.map(i => this.createModel(i));
         this.updateResults();
+        const container = document.getElementById(CONTAINER_ID);
+        if (container) {
+            container.style.visibility = 'visible';
+        }
     }
 
     onSortUpdate(): void {
@@ -69,6 +88,9 @@ export abstract class Listing<T extends LibraryItemModel<ILibraryItem>> {
             this.searchEventListener = undefined;
         }
         this.sortOptions?.clear();
+        if (this.listingCountContainer) {
+            this.listingCountContainer.innerHTML = '';
+        }
     }
 
     private updateResults(): void {
@@ -108,6 +130,17 @@ export abstract class Listing<T extends LibraryItemModel<ILibraryItem>> {
                 listingResults.appendChild(listingResultsItem);
             });
         }
+        const listingCount = this.listingCountContainer;
+        if (listingCount) {
+            const all = this.allModels.length;
+            const displayed = this.models.length;
+            listingCount.innerHTML =
+                displayed < all
+                    ? `
+            ${displayed}/${all}
+            `
+                    : `${displayed}`;
+        }
     }
 
     private createModel(item: ILibraryItem): T {
@@ -124,7 +157,9 @@ export abstract class Listing<T extends LibraryItemModel<ILibraryItem>> {
     }
 
     private clearResults(): void {
-        this.resultsContainer.innerHTML = '';
+        if (this.resultsContainer) {
+            this.resultsContainer.innerHTML = '';
+        }
     }
 
     private get searchValue(): string {

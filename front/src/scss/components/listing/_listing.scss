@@ -31,3 +31,8 @@
 .listing-results-item:not(:last-child) {
     margin-bottom: 12px;
 }
+
+.listing-count {
+    @extend .pacifico-regular;
+    font-size: 32px;
+}

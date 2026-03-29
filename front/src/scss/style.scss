@@ -1,6 +1,7 @@
 @forward './components/index';
 
 @use './abstracts/colors';
+@use './abstracts/typography';
 
 * {
     box-sizing: border-box;
@@ -18,7 +19,13 @@ body {
 .container {
     max-width: 600px;
     width: 100%;
-    padding-top: 40px;
+    padding-top: 24px;
     padding-left: 16px;
     padding-right: 16px;
+}
+
+.title {
+    @extend .pacifico-regular;
+    font-size: 64px;
+    text-align: left;
 }

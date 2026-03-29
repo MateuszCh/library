@@ -19,13 +19,21 @@
 </head>
 
 <body>
-    <div class="container">
-        <h1 style="text-align: center; font-size: 64px;"
-            class="pacifico-regular">Library</h1>
-        <div class="listing">
-            <form class="form"
+    <div class="container"
+         id="container"
+         style="visibility: hidden;">
+        <div style="display: flex; align-items: baseline; justify-content: space-between;">
+            <h1 class="title"
+                id="title"
+                style="font-size: 64px;">Library</h1>
+            <p class="listing-count"
+               id="listing-count"></p>
+        </div>
+        <div class="tools"
+             id="tools">
+            <form class="tools-form"
                   onsubmit="event.preventDefault();"
-                  id="form"
+                  id="tools-form"
                   method="POST">
                 <input type="text"
                        class="listing-search"
@@ -38,7 +46,8 @@
 
                 </div>
             </form>
-
+        </div>
+        <div class="listing">
             <ul id="listing-results"
                 class="listing-results">
 

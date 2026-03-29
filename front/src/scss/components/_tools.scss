@@ -1,7 +1,6 @@
 @use '../abstracts/colors' as colors;
 
-.form {
-    display: flex;
+.tools {
     padding-top: 16px;
     padding-bottom: 16px;
     position: sticky;
@@ -10,11 +9,11 @@
     z-index: 2;
 }
 
-.form.is-sticky {
+.tools.is-sticky {
     box-shadow: none;
 }
 
-.form.is-sticky::after {
+.tools.is-sticky::after {
     content: '';
     position: absolute;
     left: 0;
@@ -27,4 +26,9 @@
         rgba(0, 0, 0, 0.28),
         rgba(0, 0, 0, 0)
     );
+}
+
+.tools-form {
+    display: flex;
+    width: 100%;
 }

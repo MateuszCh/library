@@ -4,6 +4,7 @@ import type { ISortOptionConfig } from '../sort-option/sort-option';
 
 export class RecordsListing extends Listing<RecordModel> {
     type = 'record';
+    protected title = 'Records';
 
     protected modelConstructor = RecordModel;
 
