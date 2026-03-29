@@ -4,7 +4,7 @@ import type { SortOptions } from './sort-options';
 
 export interface ISortOptionConfig {
     label: string;
-    code: string;
+    codes: string[];
     order: 'asc' | 'desc';
     default?: boolean;
     type: 'date' | 'string';
@@ -70,19 +70,23 @@ export class SortOption<T extends LibraryItemModel> {
         return this.config.type;
     }
 
-    private get code(): string {
-        return this.config.code;
+    private get codes(): string[] {
+        return this.config.codes;
     }
 
     private getSortValue(model: LibraryItemModel): string | number | undefined {
-        const value = model.data?.data?.[this.code];
-        if (value || typeof value === 'number') {
+        const values = this.codes
+            .map(code => {
+                return model.data?.data?.[code];
+            })
+            .filter(i => !!(i || typeof i === 'number'));
+        if (values.length) {
             switch (this.type) {
                 case 'date':
-                    const date = new Date(value);
+                    const date = new Date(values[0]);
                     return date instanceof Date ? date.getTime() : undefined;
                 case 'string':
-                    return value.toString();
+                    return values.map(i => i.toString()).join(' ');
             }
         }
         return undefined;

@@ -10,30 +10,40 @@ export class RecordsListing extends Listing<RecordModel> {
     protected sortOptionsConfigs: ISortOptionConfig[] = [
         {
             label: 'Recent purchases',
-            code: 'purchase_date',
+            codes: ['purchase_date'],
             order: 'desc',
             type: 'date',
             default: true
         },
         {
             label: 'Oldest purchases',
-            code: 'purchase_date',
+            codes: ['purchase_date'],
             order: 'asc',
             type: 'date'
         },
         {
             label: 'Newest',
-            code: 'release_date',
+            codes: ['release_date'],
             order: 'desc',
             type: 'date'
         },
         {
             label: 'Oldest',
-            code: 'release_date',
+            codes: ['release_date'],
             order: 'asc',
             type: 'date'
         },
-        { label: 'A-Z', code: 'artist', order: 'asc', type: 'string' },
-        { label: 'Z-A', code: 'artist', order: 'desc', type: 'string' }
+        {
+            label: 'A-Z',
+            codes: ['artist', 'title'],
+            order: 'asc',
+            type: 'string'
+        },
+        {
+            label: 'Z-A',
+            codes: ['artist', 'title'],
+            order: 'desc',
+            type: 'string'
+        }
     ];
 }
