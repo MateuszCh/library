@@ -137,7 +137,8 @@ export class SortOptions<T extends LibraryItemModel> {
                 if (typeof config === 'object') {
                     const option = this.options.find(
                         option =>
-                            option.config.code === config.code &&
+                            option.config.codes.toString() ===
+                                config.codes.toString() &&
                             option.config.order === config.order
                     );
                     if (option) {
