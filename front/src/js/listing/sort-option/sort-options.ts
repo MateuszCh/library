@@ -29,7 +29,7 @@ export class SortOptions<T extends LibraryItemModel> {
         this.toggle();
     };
 
-    private onClickOutside = (event: PointerEvent) => {
+    private onClickOutside = (event: MouseEvent) => {
         const isClickInside = this.list?.contains(event.target as Node);
         const isClickButn = this.button?.contains(event.target as Node);
         if (!isClickInside && !isClickButn) {

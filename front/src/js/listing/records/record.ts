@@ -45,51 +45,50 @@ export class RecordModel extends LibraryItemModel<IRecordLibraryItem> {
             if (cover) {
                 const recordItemImage = document.createElement('img');
                 recordItemImage.classList.add('record-item-image');
-                recordItemImage.src = this.cover;
+                recordItemImage.src = cover;
                 recordItemLeft.appendChild(recordItemImage);
             }
             const backCover = this.backCover;
             if (backCover) {
                 const recordItemImage = document.createElement('img');
                 recordItemImage.classList.add('record-item-image-back');
-                recordItemImage.src = this.backCover;
+                recordItemImage.src = backCover;
                 recordItemLeft.appendChild(recordItemImage);
             }
             const recordItemRight = document.createElement('div');
             recordItemRight.classList.add('record-item-right');
-            recordItemRight.innerHTML = `
-            <h3 class="record-item-title">
-                ${[this.artist, this.title].filter(Boolean).join(' - ')}
-            </h3>
-        `;
+
+            const titleEl = document.createElement('h3');
+            titleEl.classList.add('record-item-title');
+            titleEl.textContent = [this.artist, this.title]
+                .filter(Boolean)
+                .join(' - ');
+            recordItemRight.appendChild(titleEl);
 
             if (this.genres) {
-                recordItemRight.innerHTML += `
-                <p class="record-item-genres">
-                    ${this.genres}
-                </p>
-            `;
+                const genresEl = document.createElement('p');
+                genresEl.classList.add('record-item-genres');
+                genresEl.textContent = this.genres;
+                recordItemRight.appendChild(genresEl);
             }
             const releaseDateFormatted = this.releaseDate
                 ? this.formatDate(this.releaseDate)
                 : undefined;
             if (releaseDateFormatted) {
-                recordItemRight.innerHTML += `
-                <p class="record-item-date">
-                    Release date: ${releaseDateFormatted}
-                </p>
-            `;
+                const releaseDateEl = document.createElement('p');
+                releaseDateEl.classList.add('record-item-date');
+                releaseDateEl.textContent = `Release date: ${releaseDateFormatted}`;
+                recordItemRight.appendChild(releaseDateEl);
             }
 
             const purchaseDateFormatted = this.purchaseDate
                 ? this.formatDate(this.purchaseDate)
                 : undefined;
             if (purchaseDateFormatted) {
-                recordItemRight.innerHTML += `
-                <p class="record-item-date">
-                    Purchase date: ${purchaseDateFormatted}
-                </p>
-            `;
+                const purchaseDateEl = document.createElement('p');
+                purchaseDateEl.classList.add('record-item-date');
+                purchaseDateEl.textContent = `Purchase date: ${purchaseDateFormatted}`;
+                recordItemRight.appendChild(purchaseDateEl);
             }
             resultItem.appendChild(recordItemLeft);
             resultItem.appendChild(recordItemRight);
@@ -109,10 +108,10 @@ export class RecordModel extends LibraryItemModel<IRecordLibraryItem> {
     }
 
     private get genres(): string | undefined {
-        if (!this._genres) {
+        if (this._genres === undefined) {
             this._genres = this.getFormattedGenres();
         }
-        return this._genres;
+        return this._genres || undefined;
     }
 
     private get releaseDate(): Date | undefined {
