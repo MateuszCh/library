@@ -33,7 +33,7 @@ export class SortOption<T extends LibraryItemModel> {
         return this.config.label;
     }
 
-    applySort<T extends LibraryItemModel>(models: T[]): T[] {
+    applySort(models: T[]): T[] {
         const modelsWithDefinedValue = models.filter(
             model => typeof this.getSortValue(model) !== 'undefined'
         );
@@ -84,7 +84,7 @@ export class SortOption<T extends LibraryItemModel> {
             switch (this.type) {
                 case 'date':
                     const date = new Date(values[0]);
-                    return date instanceof Date ? date.getTime() : undefined;
+                    return !isNaN(date.getTime()) ? date.getTime() : undefined;
                 case 'string':
                     return values.map(i => i.toString()).join(' ');
             }

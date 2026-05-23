@@ -64,6 +64,7 @@ export abstract class Listing<T extends LibraryItemModel<ILibraryItem>> {
         if (title) {
             title.innerHTML = this.title;
         }
+        this.sortOptions?.clear();
         this.sortOptions = new SortOptions(
             this.sortOptionsConfigs,
             this,
@@ -152,6 +153,7 @@ export abstract class Listing<T extends LibraryItemModel<ILibraryItem>> {
             const items = await (await fetch(`/api/type/${this.type}`)).json();
             return items;
         } catch (error) {
+            console.error('Failed to load items:', error);
             return [];
         }
     }
