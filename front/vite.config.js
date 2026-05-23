@@ -1,6 +1,13 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+    test: {
+        environment: 'jsdom',
+        coverage: {
+            provider: 'v8',
+            include: ['src/**/*.ts']
+        }
+    },
     server: {
         proxy: {
             // Przekierowuje zapytania z http://localhost:5173/api
