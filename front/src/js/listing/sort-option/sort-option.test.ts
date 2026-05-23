@@ -177,4 +177,9 @@ describe('SortOption.clear()', () => {
         btn.click();
         expect(sortOptions.updateCurrentOption).not.toHaveBeenCalled();
     });
+
+    it('does not throw when clear() is called before render() (button is undefined)', () => {
+        const opt = makeOption({});
+        expect(() => opt.clear()).not.toThrow();
+    });
 });

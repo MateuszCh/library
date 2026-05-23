@@ -180,6 +180,26 @@ describe('SortOptions rendering', () => {
 
 // ─── clear() ─────────────────────────────────────────────────────────────────
 
+describe('SortOptions with single option (UI not rendered)', () => {
+    afterEach(() => {
+        localStorage.clear();
+        document.body.innerHTML = '';
+    });
+
+    it('toggle() with undefined button/list does not throw', () => {
+        const container = makeContainer();
+        const so = new SortOptions([CONFIGS[0]], makeListing(), container);
+        const option = (so as any).options[0];
+        expect(() => so.updateCurrentOption(option)).not.toThrow();
+    });
+
+    it('clear() with undefined button does not throw', () => {
+        const container = makeContainer();
+        const so = new SortOptions([CONFIGS[0]], makeListing(), container);
+        expect(() => so.clear()).not.toThrow();
+    });
+});
+
 describe('SortOptions.clear()', () => {
     afterEach(() => {
         localStorage.clear();

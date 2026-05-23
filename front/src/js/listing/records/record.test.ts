@@ -178,6 +178,13 @@ describe('RecordModel genres memoization', () => {
         expect(m.search('artist')).toBe(true);
         expect(m.render().querySelector('p.record-item-genres')).toBeNull();
     });
+
+    it('handles empty word tokens from consecutive spaces in genre string (falsy word branch)', () => {
+        const m = makeModel({ genre: ['rock  n  roll'] });
+        const p = m.render().querySelector('p.record-item-genres');
+        expect(p).not.toBeNull();
+        expect(p?.textContent?.trim()).toContain('Rock');
+    });
 });
 
 // ─── id getter ───────────────────────────────────────────────────────────────
