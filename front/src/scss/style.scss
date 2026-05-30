@@ -34,6 +34,8 @@ body {
 .filter-sideber-container {
     position: absolute;
     right: calc(100% + 24px);
+    top: 0;
+    bottom: 0;
 }
 
 .filter-sidebar {
