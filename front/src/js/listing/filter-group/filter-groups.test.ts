@@ -135,6 +135,16 @@ describe('FilterGroups.buildValues()', () => {
         expect(details.length).toBe(2);
     });
 
+    it('opens the saved group on init when openGroupCode is set in localStorage', () => {
+        localStorage.setItem('listing-filter-groups-record-open', 'genre');
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
+
+        const genreDetails = filterGroups.querySelector<HTMLDetailsElement>('.filter-group')!;
+        expect(genreDetails.hasAttribute('open')).toBe(true);
+    });
+
     it('renders one panel per config', () => {
         const { filterGroups, buttonContainer } = setupDOM();
         const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);

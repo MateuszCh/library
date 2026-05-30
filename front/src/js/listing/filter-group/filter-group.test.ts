@@ -277,11 +277,11 @@ describe('FilterGroup.getElement()', () => {
         expect(lz?.checked).toBe(false);
     });
 
-    it('opens details when group is active', () => {
+    it('does not open details even when group is active', () => {
         const group = makeGroup({ code: 'artist', type: 'string' });
         group.setSelected(['Pink Floyd']);
         group.buildValues([makeModel({ artist: 'Pink Floyd' })]);
-        expect(group.getElement()?.hasAttribute('open')).toBe(true);
+        expect(group.getElement()?.hasAttribute('open')).toBe(false);
     });
 
     it('does not open details when group is inactive', () => {

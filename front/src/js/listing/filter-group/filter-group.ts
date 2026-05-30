@@ -182,9 +182,6 @@ export class FilterGroup<T extends LibraryItemModel> {
     private renderPanel(values: string[]): HTMLElement {
         const details = document.createElement('details');
         details.classList.add('filter-group');
-        if (this.isActive) {
-            details.setAttribute('open', '');
-        }
 
         const summary = document.createElement('summary');
         summary.classList.add('filter-group-summary');

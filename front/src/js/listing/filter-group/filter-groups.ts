@@ -22,6 +22,7 @@ export class FilterGroups<T extends LibraryItemModel> {
     private sidebarContainer?: HTMLElement;
     private buttonContainer?: HTMLElement;
     private summaryListeners: Array<{ el: HTMLElement; fn: EventListener }> = [];
+    private openGroupCode: string | null = null;
     private chipsContainer: HTMLDivElement = document.createElement('div');
 
     private modalOverlay?: HTMLElement;
@@ -57,6 +58,7 @@ export class FilterGroups<T extends LibraryItemModel> {
         this.chipsContainer.className = 'listing-filter-chips';
         this.groups = configs.map(config => new FilterGroup(config, this));
         this.restoreFromStorage();
+        this.restoreOpenState();
         this.renderMobileButton();
         this.bindModalEvents();
     }
@@ -147,6 +149,8 @@ export class FilterGroups<T extends LibraryItemModel> {
                 e.preventDefault();
                 if (el.open) {
                     this.animateClose(el);
+                    this.openGroupCode = null;
+                    this.saveOpenState();
                 } else {
                     this.groups.forEach(other => {
                         const otherEl = other.getElement() as HTMLDetailsElement | undefined;
@@ -156,6 +160,8 @@ export class FilterGroups<T extends LibraryItemModel> {
                     });
                     el.setAttribute('open', '');
                     this.animateOpen(el);
+                    this.openGroupCode = group.code;
+                    this.saveOpenState();
                 }
             };
             summary.addEventListener('click', fn);
@@ -216,6 +222,9 @@ export class FilterGroups<T extends LibraryItemModel> {
         this.groups.forEach(group => {
             const el = group.getElement();
             if (el) {
+                if (group.code === this.openGroupCode) {
+                    el.setAttribute('open', '');
+                }
                 this.sidebarContainer!.appendChild(el);
             }
         });
@@ -256,6 +265,22 @@ export class FilterGroups<T extends LibraryItemModel> {
 
     private get storageKey(): string {
         return 'listing-filter-groups-' + this.listing.type;
+    }
+
+    private get openStateKey(): string {
+        return this.storageKey + '-open';
+    }
+
+    private saveOpenState(): void {
+        if (this.openGroupCode !== null) {
+            window.localStorage.setItem(this.openStateKey, this.openGroupCode);
+        } else {
+            window.localStorage.removeItem(this.openStateKey);
+        }
+    }
+
+    private restoreOpenState(): void {
+        this.openGroupCode = window.localStorage.getItem(this.openStateKey);
     }
 
     private saveToStorage(): void {
