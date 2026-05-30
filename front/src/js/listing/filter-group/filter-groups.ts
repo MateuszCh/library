@@ -23,6 +23,7 @@ export class FilterGroups<T extends LibraryItemModel> {
     private buttonContainer?: HTMLElement;
     private summaryListeners: Array<{ el: HTMLElement; fn: EventListener }> = [];
     private openGroupCode: string | null = null;
+    private savedScrollY: number = 0;
     private chipsContainer: HTMLDivElement = document.createElement('div');
 
     private modalOverlay?: HTMLElement;
@@ -251,10 +252,20 @@ export class FilterGroups<T extends LibraryItemModel> {
         if (!this.modalBody || !this.sidebarContainer) return;
         this.modalBody.appendChild(this.sidebarContainer);
         this.modalOverlay?.classList.add(MODAL_OPEN_CLASS);
+        this.savedScrollY = window.scrollY;
+        document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${this.savedScrollY}px`;
+        document.body.style.width = '100%';
     }
 
     private closeModal(): void {
         this.modalOverlay?.classList.remove(MODAL_OPEN_CLASS);
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        window.scrollTo(0, this.savedScrollY);
         setTimeout(() => {
             const filterSidebar = document.getElementById('filter-sidebar');
             if (this.sidebarContainer && filterSidebar) {

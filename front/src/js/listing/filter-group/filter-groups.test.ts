@@ -50,9 +50,12 @@ function setupDOM(): {
     };
 }
 
+vi.stubGlobal('scrollTo', vi.fn());
+
 afterEach(() => {
     localStorage.clear();
     document.body.innerHTML = '';
+    document.body.style.cssText = '';
 });
 
 // ─── filter ───────────────────────────────────────────────────────────────────
@@ -298,6 +301,32 @@ describe('FilterGroups — mobile button', () => {
 // ─── modal ────────────────────────────────────────────────────────────────────
 
 describe('FilterGroups — modal', () => {
+    it('opening modal locks body scroll', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
+
+        buttonContainer.querySelector<HTMLButtonElement>('button')!.click();
+
+        expect(document.body.style.overflow).toBe('hidden');
+        expect(document.body.style.position).toBe('fixed');
+        expect(document.body.style.width).toBe('100%');
+    });
+
+    it('closing modal restores body scroll', () => {
+        const { filterGroups, buttonContainer, modalClose } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
+
+        buttonContainer.querySelector<HTMLButtonElement>('button')!.click();
+        modalClose.click();
+
+        expect(document.body.style.overflow).toBe('');
+        expect(document.body.style.position).toBe('');
+        expect(document.body.style.top).toBe('');
+        expect(document.body.style.width).toBe('');
+    });
+
     it('clicking mobile button adds open class to overlay', () => {
         const { filterGroups, buttonContainer, modalOverlay } = setupDOM();
         const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
