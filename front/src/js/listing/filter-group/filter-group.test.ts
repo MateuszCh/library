@@ -413,6 +413,75 @@ describe('FilterGroup checkbox interaction', () => {
     });
 });
 
+// ─── getValueLabel ────────────────────────────────────────────────────────────
+
+describe('FilterGroup.getValueLabel()', () => {
+    it('returns the raw value when not in decade mode', () => {
+        const group = makeGroup({ type: 'string' });
+        expect(group.getValueLabel('Rock')).toBe('Rock');
+    });
+
+    it('returns decade label like 60s in decade mode', () => {
+        const group = makeGroup({ code: 'release_date', type: 'year' });
+        const years = ['1960','1962','1964','1966','1968','1970','1972','1974','1976','1978','1980'];
+        group.buildValues(years.map(y => makeModel({ release_date: `${y}-01-01` })));
+        expect(group.getValueLabel('1960')).toBe('60s');
+        expect(group.getValueLabel('1970')).toBe('70s');
+        expect(group.getValueLabel('1980')).toBe('80s');
+    });
+});
+
+// ─── updateAvailableValues — decade mode ──────────────────────────────────────
+
+describe('FilterGroup.updateAvailableValues() — decade mode', () => {
+    it('hides decade options not represented in filtered models', () => {
+        const group = makeGroup({ code: 'release_date', type: 'year' });
+        const years = ['1960','1962','1964','1966','1968','1970','1972','1974','1976','1978','1980'];
+        const models = years.map(y => makeModel({ release_date: `${y}-01-01` }));
+        group.buildValues(models);
+
+        group.updateAvailableValues(models.slice(0, 5)); // only 1960s
+
+        const el = group.getElement()!;
+        const seventiesItem = Array.from(el.querySelectorAll<HTMLElement>('.filter-group-item'))
+            .find(item => item.querySelector<HTMLInputElement>('input')?.value === '1970');
+        expect(seventiesItem?.style.display).toBe('none');
+    });
+
+    it('keeps decade options visible when represented in filtered models', () => {
+        const group = makeGroup({ code: 'release_date', type: 'year' });
+        const years = ['1960','1962','1964','1966','1968','1970','1972','1974','1976','1978','1980'];
+        const models = years.map(y => makeModel({ release_date: `${y}-01-01` }));
+        group.buildValues(models);
+
+        group.updateAvailableValues(models); // all models available
+
+        const el = group.getElement()!;
+        const sixtiesItem = Array.from(el.querySelectorAll<HTMLElement>('.filter-group-item'))
+            .find(item => item.querySelector<HTMLInputElement>('input')?.value === '1960');
+        expect(sixtiesItem?.style.display).not.toBe('none');
+    });
+
+    it('deselects unavailable values and keeps available selected values', () => {
+        const group = makeGroup({ code: 'artist', type: 'string' });
+        const allModels = [makeModel({ artist: 'Pink Floyd' }), makeModel({ artist: 'Led Zeppelin' })];
+        group.buildValues(allModels);
+        group.setValueChecked('Pink Floyd', true);
+        group.setValueChecked('Led Zeppelin', true);
+
+        // Only Pink Floyd remains available
+        group.updateAvailableValues([makeModel({ artist: 'Pink Floyd' })]);
+
+        expect(group.selected).toContain('Pink Floyd');
+        expect(group.selected).not.toContain('Led Zeppelin');
+    });
+
+    it('does not throw when called before buildValues (panelElement is null)', () => {
+        const group = makeGroup({ code: 'artist', type: 'string' });
+        expect(() => group.updateAvailableValues([])).not.toThrow();
+    });
+});
+
 // ─── setSelected + buildValues interaction ────────────────────────────────────
 
 describe('FilterGroup.setSelected() + buildValues() interaction', () => {

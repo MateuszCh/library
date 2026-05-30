@@ -387,6 +387,7 @@ describe('FilterGroups — modal', () => {
     });
 
     it('closing modal does not throw when filter-sidebar is absent from DOM', () => {
+        vi.useFakeTimers();
         const { filterGroups, buttonContainer, modalClose } = setupDOM();
         const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
         fg.buildValues([makeModel({ genre: ['Rock'] })]);
@@ -395,7 +396,11 @@ describe('FilterGroups — modal', () => {
         btn.click();
 
         document.getElementById('filter-sidebar')?.remove();
-        expect(() => modalClose.click()).not.toThrow();
+        expect(() => {
+            modalClose.click();
+            vi.advanceTimersByTime(300);
+        }).not.toThrow();
+        vi.useRealTimers();
     });
 });
 
@@ -541,6 +546,125 @@ describe('FilterGroups.clear()', () => {
         const { filterGroups } = setupDOM();
         const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, undefined);
         expect(() => fg.clear()).not.toThrow();
+    });
+});
+
+// ─── accordion toggle (bindToggleListeners) ───────────────────────────────────
+
+describe('FilterGroups — accordion toggle', () => {
+    it('clicking a closed summary opens the group', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
+
+        const details = filterGroups.querySelector<HTMLDetailsElement>('.filter-group')!;
+        details.querySelector<HTMLElement>('summary')!.click();
+
+        expect(details.hasAttribute('open')).toBe(true);
+    });
+
+    it('clicking an open summary closes the group', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
+
+        const details = filterGroups.querySelector<HTMLDetailsElement>('.filter-group')!;
+        const summary = details.querySelector<HTMLElement>('summary')!;
+
+        summary.click(); // open
+        summary.click(); // close — no el.animate in jsdom so finish() runs immediately
+
+        expect(details.hasAttribute('open')).toBe(false);
+    });
+
+    it('opening one group closes the currently open group', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
+
+        const allDetails = filterGroups.querySelectorAll<HTMLDetailsElement>('.filter-group');
+        allDetails[0].querySelector<HTMLElement>('summary')!.click(); // open first
+        allDetails[1].querySelector<HTMLElement>('summary')!.click(); // open second
+
+        expect(allDetails[0].hasAttribute('open')).toBe(false);
+        expect(allDetails[1].hasAttribute('open')).toBe(true);
+    });
+});
+
+// ─── animation (mocked el.animate) ────────────────────────────────────────────
+
+describe('FilterGroups — animation', () => {
+    type MockAnim = { cancel: ReturnType<typeof vi.fn>; onfinish: null | (() => void) };
+
+    function mockAnimate(details: HTMLDetailsElement): MockAnim {
+        const anim: MockAnim = { cancel: vi.fn(), onfinish: null };
+        (details as unknown as Record<string, unknown>)['animate'] = vi.fn(() => anim);
+        return anim;
+    }
+
+    it('animateOpen calls el.animate with fill:backwards', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
+
+        const details = filterGroups.querySelector<HTMLDetailsElement>('.filter-group')!;
+        const anim = mockAnimate(details);
+
+        details.querySelector<HTMLElement>('summary')!.click();
+
+        expect((details as unknown as Record<string, unknown>)['animate'])
+            .toHaveBeenCalledWith(expect.any(Array), expect.objectContaining({ fill: 'backwards' }));
+        expect(typeof anim.onfinish).toBe('function');
+    });
+
+    it('animateOpen onfinish calls cancel', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
+
+        const details = filterGroups.querySelector<HTMLDetailsElement>('.filter-group')!;
+        const anim = mockAnimate(details);
+        details.querySelector<HTMLElement>('summary')!.click();
+
+        anim.onfinish!();
+        expect(anim.cancel).toHaveBeenCalled();
+    });
+
+    it('animateClose calls el.animate with fill:forwards', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
+
+        const details = filterGroups.querySelector<HTMLDetailsElement>('.filter-group')!;
+        const summary = details.querySelector<HTMLElement>('summary')!;
+
+        summary.click(); // open without mock
+        const anim = mockAnimate(details);
+        summary.click(); // close with mock
+
+        expect((details as unknown as Record<string, unknown>)['animate'])
+            .toHaveBeenCalledWith(expect.any(Array), expect.objectContaining({ fill: 'forwards' }));
+        expect(typeof anim.onfinish).toBe('function');
+    });
+
+    it('animateClose onfinish removes open attribute, closing class, and calls cancel', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
+
+        const details = filterGroups.querySelector<HTMLDetailsElement>('.filter-group')!;
+        const summary = details.querySelector<HTMLElement>('summary')!;
+
+        summary.click(); // open
+        const anim = mockAnimate(details);
+        summary.click(); // trigger close animation
+
+        expect(details.classList.contains('filter-group-closing')).toBe(true);
+        anim.onfinish!();
+
+        expect(details.hasAttribute('open')).toBe(false);
+        expect(details.classList.contains('filter-group-closing')).toBe(false);
+        expect(anim.cancel).toHaveBeenCalled();
     });
 });
 
