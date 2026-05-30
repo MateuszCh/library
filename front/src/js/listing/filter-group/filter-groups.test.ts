@@ -1,0 +1,441 @@
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { FilterGroups } from './filter-groups';
+import type { IFilterGroupConfig } from './filter-group';
+import type { Listing } from '../listing';
+import type { LibraryItemModel } from '../library-item/library-item';
+
+const CONFIGS: IFilterGroupConfig[] = [
+    { label: 'Genre', code: 'genre', type: 'string[]' },
+    { label: 'Artist', code: 'artist', type: 'string' }
+];
+
+function makeListing(): Listing<LibraryItemModel> {
+    return {
+        type: 'record',
+        onFilterUpdate: vi.fn()
+    } as unknown as Listing<LibraryItemModel>;
+}
+
+function makeModel(data: Record<string, unknown>): LibraryItemModel {
+    return { id: Math.random(), data: { data } } as unknown as LibraryItemModel;
+}
+
+function setupDOM(): {
+    sidebar: HTMLElement;
+    filterGroups: HTMLElement;
+    buttonContainer: HTMLElement;
+    modalOverlay: HTMLElement;
+    modalBody: HTMLElement;
+    modalClose: HTMLElement;
+} {
+    document.body.innerHTML = `
+        <div id="filter-sidebar">
+            <div id="listing-filter-groups"></div>
+        </div>
+        <div id="listing-filter-button"></div>
+        <div id="filter-modal-overlay">
+            <div id="filter-modal">
+                <button id="filter-modal-close"></button>
+                <div id="filter-modal-body"></div>
+            </div>
+        </div>
+    `;
+    return {
+        sidebar: document.getElementById('filter-sidebar')!,
+        filterGroups: document.getElementById('listing-filter-groups')!,
+        buttonContainer: document.getElementById('listing-filter-button')!,
+        modalOverlay: document.getElementById('filter-modal-overlay')!,
+        modalBody: document.getElementById('filter-modal-body')!,
+        modalClose: document.getElementById('filter-modal-close')!
+    };
+}
+
+afterEach(() => {
+    localStorage.clear();
+    document.body.innerHTML = '';
+});
+
+// ─── filter ───────────────────────────────────────────────────────────────────
+
+describe('FilterGroups.filter()', () => {
+    it('returns all models when no group has selection', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        const models = [
+            makeModel({ genre: ['Rock'], artist: 'Pink Floyd' }),
+            makeModel({ genre: ['Jazz'], artist: 'Miles Davis' })
+        ];
+        fg.buildValues(models);
+        expect(fg.filter(models)).toHaveLength(2);
+    });
+
+    it('AND logic across groups: model must satisfy all active groups', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const listing = makeListing();
+        const fg = new FilterGroups(CONFIGS, listing, filterGroups, buttonContainer);
+        const models = [
+            makeModel({ genre: ['Rock'], artist: 'Pink Floyd' }),
+            makeModel({ genre: ['Rock'], artist: 'Led Zeppelin' }),
+            makeModel({ genre: ['Jazz'], artist: 'Pink Floyd' })
+        ];
+        fg.buildValues(models);
+
+        // Manually tick genre=Rock and artist=Pink Floyd
+        const genreCheckbox = filterGroups.querySelector<HTMLInputElement>(
+            '.filter-group:nth-child(1) input[value="Rock"]'
+        )!;
+        const artistCheckbox = filterGroups.querySelector<HTMLInputElement>(
+            '.filter-group:nth-child(2) input[value="Pink Floyd"]'
+        )!;
+        genreCheckbox.checked = true;
+        genreCheckbox.dispatchEvent(new Event('change'));
+        artistCheckbox.checked = true;
+        artistCheckbox.dispatchEvent(new Event('change'));
+
+        const result = fg.filter(models);
+        expect(result).toHaveLength(1);
+        expect(result[0].data.data['artist']).toBe('Pink Floyd');
+        expect(result[0].data.data['genre']).toContain('Rock');
+    });
+
+    it('single active group acts as OR within that group', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        const models = [
+            makeModel({ genre: ['Rock'], artist: 'Pink Floyd' }),
+            makeModel({ genre: ['Jazz'], artist: 'Miles Davis' }),
+            makeModel({ genre: ['Pop'], artist: 'ABBA' })
+        ];
+        fg.buildValues(models);
+
+        const rockCheckbox = filterGroups.querySelector<HTMLInputElement>(
+            'input[value="Rock"]'
+        )!;
+        const jazzCheckbox = filterGroups.querySelector<HTMLInputElement>(
+            'input[value="Jazz"]'
+        )!;
+        rockCheckbox.checked = true;
+        rockCheckbox.dispatchEvent(new Event('change'));
+        jazzCheckbox.checked = true;
+        jazzCheckbox.dispatchEvent(new Event('change'));
+
+        expect(fg.filter(models)).toHaveLength(2);
+    });
+});
+
+// ─── buildValues ──────────────────────────────────────────────────────────────
+
+describe('FilterGroups.buildValues()', () => {
+    it('renders panels into sidebar container', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        const models = [makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })];
+        fg.buildValues(models);
+        const details = filterGroups.querySelectorAll('details');
+        expect(details.length).toBe(2);
+    });
+
+    it('renders one panel per config', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
+        const summaries = filterGroups.querySelectorAll('summary');
+        const labels = Array.from(summaries).map(s => s.textContent);
+        expect(labels).toContain('Genre');
+        expect(labels).toContain('Artist');
+    });
+});
+
+// ─── onFilterUpdate ───────────────────────────────────────────────────────────
+
+describe('FilterGroups.onFilterUpdate()', () => {
+    it('calls listing.onFilterUpdate()', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const listing = makeListing();
+        const fg = new FilterGroups(CONFIGS, listing, filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
+
+        const checkbox = filterGroups.querySelector<HTMLInputElement>('input')!;
+        checkbox.checked = true;
+        checkbox.dispatchEvent(new Event('change'));
+
+        expect(listing.onFilterUpdate).toHaveBeenCalled();
+    });
+
+    it('saves state to localStorage after update', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
+
+        const checkbox = filterGroups.querySelector<HTMLInputElement>(
+            'input[value="Rock"]'
+        )!;
+        checkbox.checked = true;
+        checkbox.dispatchEvent(new Event('change'));
+
+        const stored = JSON.parse(
+            localStorage.getItem('listing-filter-groups-record') || '{}'
+        );
+        expect(stored['genre']).toContain('Rock');
+    });
+});
+
+// ─── localStorage ─────────────────────────────────────────────────────────────
+
+describe('FilterGroups localStorage', () => {
+    it('restores selected values from storage on construction', () => {
+        localStorage.setItem(
+            'listing-filter-groups-record',
+            JSON.stringify({ genre: ['Rock'], artist: [] })
+        );
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
+        const checkbox = filterGroups.querySelector<HTMLInputElement>(
+            'input[value="Rock"]'
+        )!;
+        expect(checkbox.checked).toBe(true);
+    });
+
+    it('handles invalid JSON gracefully', () => {
+        localStorage.setItem('listing-filter-groups-record', '{broken json');
+        const { filterGroups, buttonContainer } = setupDOM();
+        expect(
+            () =>
+                new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer)
+        ).not.toThrow();
+    });
+
+    it('handles storage with unknown code keys gracefully', () => {
+        localStorage.setItem(
+            'listing-filter-groups-record',
+            JSON.stringify({ unknown_field: ['value'] })
+        );
+        const { filterGroups, buttonContainer } = setupDOM();
+        expect(
+            () =>
+                new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer)
+        ).not.toThrow();
+    });
+
+    it('handles null storage value gracefully', () => {
+        localStorage.setItem('listing-filter-groups-record', 'null');
+        const { filterGroups, buttonContainer } = setupDOM();
+        expect(
+            () =>
+                new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer)
+        ).not.toThrow();
+    });
+});
+
+// ─── mobile button ────────────────────────────────────────────────────────────
+
+describe('FilterGroups — mobile button', () => {
+    it('renders a button into buttonContainer', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        expect(buttonContainer.querySelector('button')).not.toBeNull();
+    });
+
+    it('does not throw when buttonContainer is undefined', () => {
+        const { filterGroups } = setupDOM();
+        expect(
+            () => new FilterGroups(CONFIGS, makeListing(), filterGroups, undefined)
+        ).not.toThrow();
+    });
+});
+
+// ─── modal ────────────────────────────────────────────────────────────────────
+
+describe('FilterGroups — modal', () => {
+    it('clicking mobile button adds open class to overlay', () => {
+        const { filterGroups, buttonContainer, modalOverlay } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
+
+        const btn = buttonContainer.querySelector<HTMLButtonElement>('button')!;
+        btn.click();
+
+        expect(modalOverlay.classList.contains('filter-modal-overlay-open')).toBe(true);
+    });
+
+    it('clicking close button removes open class', () => {
+        const { filterGroups, buttonContainer, modalOverlay, modalClose } =
+            setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
+
+        const btn = buttonContainer.querySelector<HTMLButtonElement>('button')!;
+        btn.click();
+        modalClose.click();
+
+        expect(modalOverlay.classList.contains('filter-modal-overlay-open')).toBe(
+            false
+        );
+    });
+
+    it('clicking overlay backdrop closes modal', () => {
+        const { filterGroups, buttonContainer, modalOverlay } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
+
+        const btn = buttonContainer.querySelector<HTMLButtonElement>('button')!;
+        btn.click();
+        modalOverlay.dispatchEvent(
+            new MouseEvent('click', { bubbles: true, target: modalOverlay } as MouseEventInit)
+        );
+
+        expect(modalOverlay.classList.contains('filter-modal-overlay-open')).toBe(
+            false
+        );
+    });
+
+    it('opening modal moves filterGroups container into modal body', () => {
+        const { filterGroups, buttonContainer, modalBody } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
+
+        const btn = buttonContainer.querySelector<HTMLButtonElement>('button')!;
+        btn.click();
+
+        expect(modalBody.contains(filterGroups)).toBe(true);
+    });
+
+    it('closing modal returns filterGroups container to sidebar', () => {
+        const { sidebar, filterGroups, buttonContainer, modalClose } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
+
+        const btn = buttonContainer.querySelector<HTMLButtonElement>('button')!;
+        btn.click();
+        modalClose.click();
+
+        expect(sidebar.contains(filterGroups)).toBe(true);
+    });
+
+    it('does not throw when modal elements are absent', () => {
+        document.body.innerHTML = `
+            <div id="filter-sidebar">
+                <div id="listing-filter-groups"></div>
+            </div>
+            <div id="listing-filter-button"></div>
+        `;
+        const filterGroups = document.getElementById('listing-filter-groups')!;
+        const buttonContainer = document.getElementById('listing-filter-button')!;
+        expect(
+            () =>
+                new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer)
+        ).not.toThrow();
+    });
+
+    it('clicking button does not throw when modalBody is absent', () => {
+        document.body.innerHTML = `
+            <div id="filter-sidebar">
+                <div id="listing-filter-groups"></div>
+            </div>
+            <div id="listing-filter-button"></div>
+        `;
+        const filterGroups = document.getElementById('listing-filter-groups')!;
+        const buttonContainer = document.getElementById('listing-filter-button')!;
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'] })]);
+        const btn = buttonContainer.querySelector<HTMLButtonElement>('button')!;
+        expect(() => btn.click()).not.toThrow();
+    });
+
+    it('closing modal does not throw when filter-sidebar is absent from DOM', () => {
+        const { filterGroups, buttonContainer, modalClose } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'] })]);
+
+        const btn = buttonContainer.querySelector<HTMLButtonElement>('button')!;
+        btn.click();
+
+        document.getElementById('filter-sidebar')?.remove();
+        expect(() => modalClose.click()).not.toThrow();
+    });
+});
+
+// ─── renderSidebar defensive guard ───────────────────────────────────────────
+
+describe('FilterGroups.buildValues() — group returning undefined element', () => {
+    it('skips group that returns undefined from getElement()', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+
+        // Patch internal groups to include one that always returns undefined
+        const internalGroups = (
+            fg as unknown as { groups: Array<{ buildValues: () => void; getElement: () => HTMLElement | undefined; filter: (m: unknown[]) => unknown[] }> }
+        ).groups;
+        internalGroups.push({
+            buildValues: vi.fn(),
+            getElement: vi.fn(() => undefined),
+            filter: (m: unknown[]) => m
+        });
+
+        expect(() =>
+            fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })])
+        ).not.toThrow();
+        expect(filterGroups.children.length).toBe(2); // 2 real groups, undefined one skipped
+    });
+});
+
+// ─── clear ────────────────────────────────────────────────────────────────────
+
+describe('FilterGroups.clear()', () => {
+    it('removes mobile button from DOM', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.clear();
+        expect(buttonContainer.querySelector('button')).toBeNull();
+    });
+
+    it('modal no longer opens after clear()', () => {
+        const { filterGroups, buttonContainer, modalOverlay } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'] })]);
+
+        const btn = buttonContainer.querySelector<HTMLButtonElement>('button')!;
+        fg.clear();
+        btn.click();
+
+        expect(modalOverlay.classList.contains('filter-modal-overlay-open')).toBe(
+            false
+        );
+    });
+
+    it('does not throw when called without prior buildValues', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        expect(() => fg.clear()).not.toThrow();
+    });
+
+    it('does not throw when mobileFilterButton was never rendered (no buttonContainer)', () => {
+        const { filterGroups } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, undefined);
+        expect(() => fg.clear()).not.toThrow();
+    });
+});
+
+// ─── no container ─────────────────────────────────────────────────────────────
+
+describe('FilterGroups — no container', () => {
+    it('does not throw when sidebarContainer is undefined', () => {
+        expect(
+            () => new FilterGroups(CONFIGS, makeListing(), undefined, undefined)
+        ).not.toThrow();
+    });
+
+    it('buildValues does not throw when sidebarContainer is undefined', () => {
+        const fg = new FilterGroups(CONFIGS, makeListing(), undefined, undefined);
+        expect(() =>
+            fg.buildValues([makeModel({ genre: ['Rock'] })])
+        ).not.toThrow();
+    });
+
+    it('filter() works even without containers', () => {
+        const fg = new FilterGroups(CONFIGS, makeListing(), undefined, undefined);
+        const models = [makeModel({ genre: ['Rock'] })];
+        expect(fg.filter(models)).toHaveLength(1);
+    });
+});

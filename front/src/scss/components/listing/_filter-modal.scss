@@ -1,0 +1,64 @@
+@use '../../abstracts/colors' as colors;
+@use '../../abstracts/typography';
+
+.filter-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.filter-modal-overlay-open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.filter-modal {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: colors.$primary;
+    border-radius: 16px 16px 0 0;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 16px;
+    transform: translateY(100%);
+    transition: transform 0.25s ease-in-out;
+}
+
+.filter-modal-overlay-open .filter-modal {
+    transform: translateY(0);
+}
+
+.filter-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.filter-modal-title {
+    @extend .pacifico-regular;
+    font-size: 24px;
+    color: white;
+}
+
+.filter-modal-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: background 0.1s;
+    @extend .inter-regular;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+}

@@ -32,8 +32,12 @@ function setupDOM(): void {
             <div id="tools">
                 <form>
                     <input type="text" id="listing-search" />
+                    <div id="listing-filter-button"></div>
                     <div id="listing-sort-options"></div>
                 </form>
+            </div>
+            <div id="filter-sidebar">
+                <div id="listing-filter-groups"></div>
             </div>
             <ul id="listing-results"></ul>
         </div>
@@ -219,13 +223,44 @@ describe('Listing search', () => {
     });
 });
 
-// ─── applySort fallback before init() ───────────────────────────────────────
+// ─── applySort / applyFilter fallback before init() ─────────────────────────
 
 describe('Listing.onSortUpdate() before init()', () => {
     it('does not throw when sortOptions is not yet set (covers || models branch)', () => {
         setupDOM();
         const listing = new TestListing();
         expect(() => listing.onSortUpdate()).not.toThrow();
+    });
+});
+
+describe('Listing.onFilterUpdate() before init()', () => {
+    it('does not throw when filterGroups is not yet set', () => {
+        setupDOM();
+        const listing = new TestListing();
+        expect(() => listing.onFilterUpdate()).not.toThrow();
+    });
+});
+
+// ─── onFilterUpdate() ────────────────────────────────────────────────────────
+
+describe('Listing.onFilterUpdate()', () => {
+    it('triggers re-render when called after init', async () => {
+        setupDOM();
+        mockFetch([
+            { id: 1, _id: '1', created: 0, title: 'Rock', type: 'test', data: {} },
+            { id: 2, _id: '2', created: 0, title: 'Jazz', type: 'test', data: {} }
+        ]);
+        const listing = new TestListing();
+        await listing.init();
+
+        const input = document.getElementById('listing-search') as HTMLInputElement;
+        input.value = 'rock';
+        input.dispatchEvent(new Event('input'));
+        expect(document.querySelectorAll('.listing-results-item').length).toBe(1);
+
+        input.value = '';
+        listing.onFilterUpdate();
+        expect(document.querySelectorAll('.listing-results-item').length).toBe(2);
     });
 });
 

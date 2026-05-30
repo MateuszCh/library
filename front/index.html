@@ -22,36 +22,59 @@
     <div class="container"
          id="container"
          style="visibility: hidden;">
-        <div style="display: flex; align-items: baseline; justify-content: space-between;">
-            <h1 class="title"
-                id="title"
-                style="font-size: 64px;">Library</h1>
-            <p class="listing-count"
-               id="listing-count"></p>
-        </div>
-        <div class="tools"
-             id="tools">
-            <form class="tools-form"
-                  onsubmit="event.preventDefault();"
-                  id="tools-form"
-                  method="POST">
-                <input type="text"
-                       class="listing-search"
-                       id="listing-search"
-                       style="width: 100%;"
-                       name="title"
-                       placeholder="Title, artist, album, release year, etc." />
-                <div id="listing-sort-options"
-                     class="listing-sort-options">
-
+        <div class="app-layout">
+            <aside class="filter-sidebar"
+                   id="filter-sidebar">
+                <div id="listing-filter-groups"
+                     class="listing-filter-groups"></div>
+            </aside>
+            <div class="app-main">
+                <div style="display: flex; align-items: baseline; justify-content: space-between;">
+                    <h1 class="title"
+                        id="title"
+                        style="font-size: 64px;">Library</h1>
+                    <p class="listing-count"
+                       id="listing-count"></p>
                 </div>
-            </form>
+                <div class="tools"
+                     id="tools">
+                    <form class="tools-form"
+                          onsubmit="event.preventDefault();"
+                          id="tools-form"
+                          method="POST">
+                        <input type="text"
+                               class="listing-search"
+                               id="listing-search"
+                               name="title"
+                               placeholder="Title, artist, album, release year, etc." />
+                        <div id="listing-filter-button"
+                             class="listing-filter-button-container"></div>
+                        <div id="listing-sort-options"
+                             class="listing-sort-options">
+                        </div>
+                    </form>
+                </div>
+                <div class="listing">
+                    <ul id="listing-results"
+                        class="listing-results">
+                    </ul>
+                </div>
+            </div>
         </div>
-        <div class="listing">
-            <ul id="listing-results"
-                class="listing-results">
 
-            </ul>
+        <div class="filter-modal-overlay"
+             id="filter-modal-overlay">
+            <div class="filter-modal">
+                <div class="filter-modal-header">
+                    <span class="filter-modal-title">Filters</span>
+                    <button type="button"
+                            class="filter-modal-close"
+                            id="filter-modal-close"
+                            aria-label="Close filters">✕</button>
+                </div>
+                <div class="filter-modal-body"
+                     id="filter-modal-body"></div>
+            </div>
         </div>
     </div>
     <script type="module"

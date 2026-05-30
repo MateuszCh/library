@@ -4,12 +4,16 @@ import type {
 } from './library-item/library-item';
 import { type ISortOptionConfig } from './sort-option/sort-option';
 import { SortOptions } from './sort-option/sort-options';
+import { type IFilterGroupConfig } from './filter-group/filter-group';
+import { FilterGroups } from './filter-group/filter-groups';
 
 const SEARCH_STORAGE_KEY = 'listing-search-value';
 
 const LISTING_SEARCH_ID = 'listing-search';
 const LISTING_RESULTS_ID = 'listing-results';
 const LISTING_SORT_OPTIONS_ID = 'listing-sort-options';
+const LISTING_FILTER_GROUPS_ID = 'listing-filter-groups';
+const LISTING_FILTER_BUTTON_ID = 'listing-filter-button';
 const LISTING_COUNT_ID = 'listing-count';
 const TITLE_ID = 'title';
 const CONTAINER_ID = 'container';
@@ -20,14 +24,18 @@ export abstract class Listing<T extends LibraryItemModel<ILibraryItem>> {
     private resultsContainer?: HTMLElement;
     private search?: HTMLInputElement;
     private sortOptionsContainer?: HTMLElement;
+    private filterGroupsContainer?: HTMLElement;
+    private filterButtonContainer?: HTMLElement;
     private searchEventListener?: EventListener;
     private listingCountContainer?: HTMLElement;
 
     protected sortOptionsConfigs: ISortOptionConfig[] = [];
+    protected filterGroupsConfigs: IFilterGroupConfig[] = [];
 
     private models: T[] = [];
     private allModels: T[] = [];
     private sortOptions?: SortOptions<T>;
+    private filterGroups?: FilterGroups<T>;
 
     protected abstract modelConstructor: new (data: ILibraryItem) => T;
 
@@ -39,6 +47,10 @@ export abstract class Listing<T extends LibraryItemModel<ILibraryItem>> {
             undefined;
         this.sortOptionsContainer =
             document.getElementById(LISTING_SORT_OPTIONS_ID) || undefined;
+        this.filterGroupsContainer =
+            document.getElementById(LISTING_FILTER_GROUPS_ID) || undefined;
+        this.filterButtonContainer =
+            document.getElementById(LISTING_FILTER_BUTTON_ID) || undefined;
         this.listingCountContainer =
             document.getElementById(LISTING_COUNT_ID) || undefined;
         if (this.search) {
@@ -70,8 +82,16 @@ export abstract class Listing<T extends LibraryItemModel<ILibraryItem>> {
             this,
             this.sortOptionsContainer
         );
+        this.filterGroups?.clear();
+        this.filterGroups = new FilterGroups(
+            this.filterGroupsConfigs,
+            this,
+            this.filterGroupsContainer,
+            this.filterButtonContainer
+        );
         const items = await this.loadItems();
         this.allModels = items.map(i => this.createModel(i));
+        this.filterGroups.buildValues(this.allModels);
         this.updateResults();
         const container = document.getElementById(CONTAINER_ID);
         if (container) {
@@ -83,12 +103,17 @@ export abstract class Listing<T extends LibraryItemModel<ILibraryItem>> {
         this.updateResults();
     }
 
+    onFilterUpdate(): void {
+        this.updateResults();
+    }
+
     clear(): void {
         if (this.search && this.searchEventListener) {
             this.search.removeEventListener('input', this.searchEventListener);
             this.searchEventListener = undefined;
         }
         this.sortOptions?.clear();
+        this.filterGroups?.clear();
         if (this.listingCountContainer) {
             this.listingCountContainer.innerHTML = '';
         }
@@ -113,7 +138,7 @@ export abstract class Listing<T extends LibraryItemModel<ILibraryItem>> {
     }
 
     private applyFilters(models: T[]): T[] {
-        return this.applySearch(models);
+        return this.applySearch(this.filterGroups?.filter(models) ?? models);
     }
 
     private applySort(models: T[]): T[] {
