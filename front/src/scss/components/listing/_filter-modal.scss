@@ -7,14 +7,16 @@
     background: rgba(0, 0, 0, 0.4);
     z-index: 100;
     opacity: 0;
+    visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.1s ease-in-out 0.3s;
+    transition: opacity 0.1s ease-in-out 0.3s, visibility 0s linear 0.4s;
 }
 
 .filter-modal-overlay-open {
     opacity: 1;
+    visibility: visible;
     pointer-events: auto;
-    transition: opacity 0s ease-in-out;
+    transition: opacity 0s, visibility 0s;
 }
 
 .filter-modal {
