@@ -17,7 +17,7 @@ body {
 }
 
 .container {
-    max-width: 950px;
+    max-width: 600px;
     width: 100%;
     padding-top: 24px;
     padding-left: 16px;
@@ -28,13 +28,20 @@ body {
     display: flex;
     gap: 24px;
     align-items: flex-start;
+    position: relative;
+}
+
+.filter-sideber-container {
+    position: absolute;
+    right: calc(100% + 24px);
 }
 
 .filter-sidebar {
     width: 200px;
     flex-shrink: 0;
     position: sticky;
-    top: 80px;
+    top: 86px;
+    margin-top: 199px;
 }
 
 .app-main {
