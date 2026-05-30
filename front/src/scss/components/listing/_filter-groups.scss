@@ -5,6 +5,62 @@
     // padding-top: 8px;
 }
 
+.listing-filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+
+    &:empty {
+        display: none;
+    }
+}
+
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: white;
+    border-radius: 12px;
+    padding: 3px 8px 3px 10px;
+    @extend .inter-regular;
+    font-size: 12px;
+    color: #333;
+}
+
+.filter-chip-remove {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    color: #666;
+    display: flex;
+    align-items: center;
+
+    &:hover {
+        color: #000;
+    }
+}
+
+.filter-chips-reset {
+    display: inline-flex;
+    align-items: center;
+    background: white;
+    border: none;
+    border-radius: 12px;
+    padding: 3px 10px;
+    @extend .inter-regular;
+    font-size: 12px;
+    color: #666;
+    cursor: pointer;
+
+    &:hover {
+        color: #000;
+    }
+}
+
 .filter-group {
     margin-bottom: 6px;
     border-radius: 8px;
@@ -43,6 +99,8 @@ details[open] .filter-group-summary::after {
 .filter-group-list {
     list-style: none;
     padding: 4px 0 8px 0;
+    max-height: 300px;
+    overflow-y: auto;
 }
 
 .filter-group-item {

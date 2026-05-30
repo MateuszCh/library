@@ -17,9 +17,12 @@ const FILTER_ICON = `
 
 export class FilterGroups<T extends LibraryItemModel> {
     private groups: FilterGroup<T>[] = [];
+    private allModels: T[] = [];
     private listing: Listing<T>;
     private sidebarContainer?: HTMLElement;
     private buttonContainer?: HTMLElement;
+    private toggleListeners: Array<{ el: HTMLDetailsElement; fn: EventListener }> = [];
+    private chipsContainer: HTMLDivElement = document.createElement('div');
 
     private modalOverlay?: HTMLElement;
     private modalBody?: HTMLElement;
@@ -51,6 +54,7 @@ export class FilterGroups<T extends LibraryItemModel> {
         this.modalCloseButton =
             document.getElementById(FILTER_MODAL_CLOSE_ID) || undefined;
 
+        this.chipsContainer.className = 'listing-filter-chips';
         this.groups = configs.map(config => new FilterGroup(config, this));
         this.restoreFromStorage();
         this.renderMobileButton();
@@ -58,11 +62,17 @@ export class FilterGroups<T extends LibraryItemModel> {
     }
 
     buildValues(models: T[]): void {
+        this.allModels = models;
         this.groups.forEach(group => group.buildValues(models));
         this.renderSidebar();
+        this.bindToggleListeners();
+        this.rebuildAvailableOptions();
+        this.renderChips();
     }
 
     onFilterUpdate(_group: FilterGroup<T>): void {
+        this.rebuildAvailableOptions();
+        this.renderChips();
         this.saveToStorage();
         this.listing.onFilterUpdate();
     }
@@ -72,6 +82,8 @@ export class FilterGroups<T extends LibraryItemModel> {
     }
 
     clear(): void {
+        this.toggleListeners.forEach(({ el, fn }) => el.removeEventListener('toggle', fn));
+        this.toggleListeners = [];
         this.groups.forEach(g => g.clear());
         this.modalOverlay?.removeEventListener('click', this.onModalOverlayClick);
         this.modalCloseButton?.removeEventListener('click', this.onModalClose);
@@ -85,9 +97,86 @@ export class FilterGroups<T extends LibraryItemModel> {
         }
     }
 
+    private rebuildAvailableOptions(): void {
+        this.groups.forEach(target => {
+            const filtered = this.groups
+                .filter(g => g !== target)
+                .reduce((acc, g) => g.filter(acc), this.allModels);
+            target.updateAvailableValues(filtered);
+        });
+    }
+
+    private bindToggleListeners(): void {
+        this.toggleListeners.forEach(({ el, fn }) => el.removeEventListener('toggle', fn));
+        this.toggleListeners = [];
+        this.groups.forEach(group => {
+            const el = group.getElement() as HTMLDetailsElement | undefined;
+            if (!el) return;
+            const fn: EventListener = () => {
+                if (el.open) {
+                    this.groups.forEach(other => {
+                        const otherEl = other.getElement() as HTMLDetailsElement | undefined;
+                        if (otherEl && otherEl !== el && otherEl.open) {
+                            otherEl.removeAttribute('open');
+                        }
+                    });
+                }
+            };
+            el.addEventListener('toggle', fn);
+            this.toggleListeners.push({ el, fn });
+        });
+    }
+
+    private renderChips(): void {
+        this.chipsContainer.innerHTML = '';
+        let hasSelection = false;
+        this.groups.forEach(group => {
+            group.selected.forEach(value => {
+                hasSelection = true;
+                const chip = document.createElement('span');
+                chip.className = 'filter-chip';
+
+                const labelEl = document.createElement('span');
+                labelEl.textContent = group.getValueLabel(value);
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'filter-chip-remove';
+                btn.setAttribute('aria-label', `Remove ${group.label} filter`);
+                btn.textContent = '×';
+                btn.addEventListener('click', () => {
+                    group.setValueChecked(value, false);
+                    this.onFilterUpdate(group);
+                });
+
+                chip.appendChild(labelEl);
+                chip.appendChild(btn);
+                this.chipsContainer.appendChild(chip);
+            });
+        });
+
+        if (hasSelection) {
+            const resetBtn = document.createElement('button');
+            resetBtn.type = 'button';
+            resetBtn.className = 'filter-chips-reset';
+            resetBtn.textContent = 'Clear all';
+            resetBtn.addEventListener('click', () => this.resetAll());
+            this.chipsContainer.appendChild(resetBtn);
+        }
+    }
+
+    private resetAll(): void {
+        this.groups.forEach(g => g.clearAll());
+        this.rebuildAvailableOptions();
+        this.renderChips();
+        this.saveToStorage();
+        this.listing.onFilterUpdate();
+    }
+
     private renderSidebar(): void {
         if (!this.sidebarContainer) return;
         this.sidebarContainer.innerHTML = '';
+        this.sidebarContainer.appendChild(this.chipsContainer);
         this.groups.forEach(group => {
             const el = group.getElement();
             if (el) {

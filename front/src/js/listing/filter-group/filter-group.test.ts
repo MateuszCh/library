@@ -192,6 +192,56 @@ describe('FilterGroup.buildValues() — type: year', () => {
         const values = Array.from(checkboxes || []).map(c => c.value);
         expect(values).toEqual(['1979', '1987']);
     });
+
+    it('groups into decades when more than 10 unique years', () => {
+        const group = makeGroup({ code: 'release_date', type: 'year' });
+        const years = ['1960','1962','1964','1966','1968','1970','1972','1974','1976','1978','1980'];
+        group.buildValues(years.map(y => makeModel({ release_date: `${y}-01-01` })));
+        const el = group.getElement();
+        const checkboxes = el?.querySelectorAll<HTMLInputElement>('input[type="checkbox"]');
+        const values = Array.from(checkboxes || []).map(c => c.value);
+        expect(values).toEqual(['1960', '1970', '1980']);
+    });
+
+    it('shows decade label e.g. 60s, 70s', () => {
+        const group = makeGroup({ code: 'release_date', type: 'year' });
+        const years = ['1960','1962','1964','1966','1968','1970','1972','1974','1976','1978','1980'];
+        group.buildValues(years.map(y => makeModel({ release_date: `${y}-01-01` })));
+        const el = group.getElement();
+        const labels = el?.querySelectorAll('.filter-group-label');
+        const texts = Array.from(labels || []).map(l => l.textContent?.trim());
+        expect(texts).toContain('60s');
+        expect(texts).toContain('70s');
+        expect(texts).toContain('80s');
+    });
+});
+
+describe('FilterGroup.filter() — decade mode', () => {
+    function makeDecadeGroup() {
+        const group = makeGroup({ code: 'release_date', type: 'year' });
+        const years = ['1960','1962','1964','1966','1968','1970','1972','1974','1976','1978','1980'];
+        group.buildValues(years.map(y => makeModel({ release_date: `${y}-01-01` })));
+        return group;
+    }
+
+    it('matches model whose year falls in selected decade', () => {
+        const group = makeDecadeGroup();
+        group.setSelected(['1960']);
+        const models = [
+            makeModel({ release_date: '1965-06-01' }),
+            makeModel({ release_date: '1975-06-01' })
+        ];
+        const result = group.filter(models);
+        expect(result).toHaveLength(1);
+        expect(result[0].data.data['release_date']).toBe('1965-06-01');
+    });
+
+    it('does not match model whose year is outside selected decade', () => {
+        const group = makeDecadeGroup();
+        group.setSelected(['1970']);
+        const models = [makeModel({ release_date: '1965-01-01' })];
+        expect(group.filter(models)).toHaveLength(0);
+    });
 });
 
 // ─── getElement / render ──────────────────────────────────────────────────────

@@ -82,10 +82,10 @@ describe('FilterGroups.filter()', () => {
 
         // Manually tick genre=Rock and artist=Pink Floyd
         const genreCheckbox = filterGroups.querySelector<HTMLInputElement>(
-            '.filter-group:nth-child(1) input[value="Rock"]'
+            '.filter-group:nth-child(2) input[value="Rock"]'
         )!;
         const artistCheckbox = filterGroups.querySelector<HTMLInputElement>(
-            '.filter-group:nth-child(2) input[value="Pink Floyd"]'
+            '.filter-group:nth-child(3) input[value="Pink Floyd"]'
         )!;
         genreCheckbox.checked = true;
         genreCheckbox.dispatchEvent(new Event('change'));
@@ -177,6 +177,46 @@ describe('FilterGroups.onFilterUpdate()', () => {
             localStorage.getItem('listing-filter-groups-record') || '{}'
         );
         expect(stored['genre']).toContain('Rock');
+    });
+});
+
+// ─── rebuildAvailableOptions ──────────────────────────────────────────────────
+
+describe('FilterGroups — rebuildAvailableOptions', () => {
+    it('hides options in other groups that yield no results', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([
+            makeModel({ genre: ['Rock'], artist: 'Pink Floyd' }),
+            makeModel({ genre: ['Jazz'], artist: 'Miles Davis' })
+        ]);
+
+        const rockCheckbox = filterGroups.querySelector<HTMLInputElement>('input[value="Rock"]')!;
+        rockCheckbox.checked = true;
+        rockCheckbox.dispatchEvent(new Event('change'));
+
+        const milesItem = Array.from(
+            filterGroups.querySelectorAll<HTMLElement>('.filter-group-item')
+        ).find(el => el.querySelector('input[value="Miles Davis"]'));
+        expect(milesItem?.style.display).toBe('none');
+    });
+
+    it('keeps options visible when they still yield results', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([
+            makeModel({ genre: ['Rock'], artist: 'Pink Floyd' }),
+            makeModel({ genre: ['Jazz'], artist: 'Miles Davis' })
+        ]);
+
+        const rockCheckbox = filterGroups.querySelector<HTMLInputElement>('input[value="Rock"]')!;
+        rockCheckbox.checked = true;
+        rockCheckbox.dispatchEvent(new Event('change'));
+
+        const pinkFloydItem = Array.from(
+            filterGroups.querySelectorAll<HTMLElement>('.filter-group-item')
+        ).find(el => el.querySelector('input[value="Pink Floyd"]'));
+        expect(pinkFloydItem?.style.display).not.toBe('none');
     });
 });
 
@@ -365,18 +405,102 @@ describe('FilterGroups.buildValues() — group returning undefined element', () 
 
         // Patch internal groups to include one that always returns undefined
         const internalGroups = (
-            fg as unknown as { groups: Array<{ buildValues: () => void; getElement: () => HTMLElement | undefined; filter: (m: unknown[]) => unknown[] }> }
+            fg as unknown as { groups: Array<{ buildValues: () => void; getElement: () => HTMLElement | undefined; filter: (m: unknown[]) => unknown[]; updateAvailableValues: () => void; selected: string[]; getValueLabel: (v: string) => string }> }
         ).groups;
         internalGroups.push({
             buildValues: vi.fn(),
             getElement: vi.fn(() => undefined),
-            filter: (m: unknown[]) => m
+            filter: (m: unknown[]) => m,
+            updateAvailableValues: vi.fn(),
+            selected: [],
+            getValueLabel: (v: string) => v
         });
 
         expect(() =>
             fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })])
         ).not.toThrow();
-        expect(filterGroups.children.length).toBe(2); // 2 real groups, undefined one skipped
+        expect(filterGroups.children.length).toBe(3); // chipsContainer + 2 real groups (undefined one skipped)
+    });
+});
+
+// ─── filter chips ─────────────────────────────────────────────────────────────
+
+describe('FilterGroups — filter chips', () => {
+    it('renders a chip for each selected value', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([
+            makeModel({ genre: ['Rock'], artist: 'Pink Floyd' }),
+            makeModel({ genre: ['Jazz'], artist: 'Miles Davis' })
+        ]);
+
+        const checkbox = filterGroups.querySelector<HTMLInputElement>('input[value="Rock"]')!;
+        checkbox.checked = true;
+        checkbox.dispatchEvent(new Event('change'));
+
+        const chips = filterGroups.querySelectorAll('.filter-chip');
+        expect(chips.length).toBe(1);
+        expect(chips[0].textContent).toContain('Rock');
+    });
+
+    it('removes chip and deselects value when × is clicked', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const listing = makeListing();
+        const fg = new FilterGroups(CONFIGS, listing, filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
+
+        const checkbox = filterGroups.querySelector<HTMLInputElement>('input[value="Rock"]')!;
+        checkbox.checked = true;
+        checkbox.dispatchEvent(new Event('change'));
+
+        const removeBtn = filterGroups.querySelector<HTMLButtonElement>('.filter-chip-remove')!;
+        removeBtn.click();
+
+        expect(filterGroups.querySelectorAll('.filter-chip').length).toBe(0);
+        expect(listing.onFilterUpdate).toHaveBeenCalledTimes(2);
+    });
+
+    it('shows no chips when no filters are active', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
+        expect(filterGroups.querySelectorAll('.filter-chip').length).toBe(0);
+    });
+
+    it('shows reset button when filters are active', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
+
+        const checkbox = filterGroups.querySelector<HTMLInputElement>('input[value="Rock"]')!;
+        checkbox.checked = true;
+        checkbox.dispatchEvent(new Event('change'));
+
+        expect(filterGroups.querySelector('.filter-chips-reset')).not.toBeNull();
+    });
+
+    it('reset button clears all filters and updates listing', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const listing = makeListing();
+        const fg = new FilterGroups(CONFIGS, listing, filterGroups, buttonContainer);
+        fg.buildValues([
+            makeModel({ genre: ['Rock'], artist: 'Pink Floyd' }),
+            makeModel({ genre: ['Jazz'], artist: 'Miles Davis' })
+        ]);
+
+        filterGroups.querySelector<HTMLInputElement>('input[value="Rock"]')!.checked = true;
+        filterGroups.querySelector<HTMLInputElement>('input[value="Rock"]')!.dispatchEvent(new Event('change'));
+        filterGroups.querySelector<HTMLInputElement>('input[value="Pink Floyd"]')!.checked = true;
+        filterGroups.querySelector<HTMLInputElement>('input[value="Pink Floyd"]')!.dispatchEvent(new Event('change'));
+
+        filterGroups.querySelector<HTMLButtonElement>('.filter-chips-reset')!.click();
+
+        expect(filterGroups.querySelectorAll('.filter-chip').length).toBe(0);
+        expect(filterGroups.querySelector('.filter-chips-reset')).toBeNull();
+        expect(fg.filter([
+            makeModel({ genre: ['Rock'], artist: 'Pink Floyd' }),
+            makeModel({ genre: ['Jazz'], artist: 'Miles Davis' })
+        ])).toHaveLength(2);
     });
 });
 

@@ -16,6 +16,7 @@ export class FilterGroup<T extends LibraryItemModel> {
     private checkboxListeners: Array<{ el: HTMLInputElement; fn: EventListener }> =
         [];
     private panelElement?: HTMLElement;
+    private usesDecades: boolean = false;
 
     constructor(config: IFilterGroupConfig, filterGroups: FilterGroups<T>) {
         this.config = config;
@@ -40,6 +41,13 @@ export class FilterGroup<T extends LibraryItemModel> {
 
     get selected(): string[] {
         return Array.from(this.selectedValues);
+    }
+
+    getValueLabel(value: string): string {
+        if (this.usesDecades) {
+            return `${String(parseInt(value) % 100).padStart(2, '0')}s`;
+        }
+        return value;
     }
 
     buildValues(models: T[]): void {
@@ -77,6 +85,29 @@ export class FilterGroup<T extends LibraryItemModel> {
         }
     }
 
+    updateAvailableValues(models: T[]): void {
+        const available = new Set(this.extractValuesInCurrentMode(models));
+        this.selectedValues.forEach(v => {
+            if (!available.has(v)) this.selectedValues.delete(v);
+        });
+        const list = this.panelElement?.querySelector('.filter-group-list');
+        if (!list) return;
+        list.querySelectorAll<HTMLElement>('.filter-group-item').forEach(item => {
+            const checkbox = item.querySelector<HTMLInputElement>('input[type="checkbox"]');
+            if (!checkbox) return;
+            const visible = available.has(checkbox.value);
+            item.style.display = visible ? '' : 'none';
+            if (!visible) checkbox.checked = false;
+        });
+    }
+
+    clearAll(): void {
+        this.selectedValues.clear();
+        this.panelElement
+            ?.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
+            .forEach(cb => { cb.checked = false; });
+    }
+
     clear(): void {
         this.checkboxListeners.forEach(({ el, fn }) => {
             el.removeEventListener('change', fn);
@@ -85,13 +116,39 @@ export class FilterGroup<T extends LibraryItemModel> {
         this.panelElement = undefined;
     }
 
+    private extractValuesInCurrentMode(models: T[]): string[] {
+        const set = new Set<string>();
+        models.forEach(model => {
+            const raw = model.data?.data?.[this.code];
+            this.normalizeToStrings(raw).forEach(v => set.add(v));
+        });
+        if (this.usesDecades) {
+            const decadeSet = new Set<string>();
+            set.forEach(year => decadeSet.add(String(Math.floor(parseInt(year) / 10) * 10)));
+            return Array.from(decadeSet);
+        }
+        return Array.from(set);
+    }
+
     private extractValues(models: T[]): string[] {
         const set = new Set<string>();
         models.forEach(model => {
             const raw = model.data?.data?.[this.code];
             this.normalizeToStrings(raw).forEach(v => set.add(v));
         });
-        return Array.from(set).sort();
+        const values = Array.from(set).sort();
+
+        if (this.type === 'year' && values.length > 10) {
+            this.usesDecades = true;
+            const decadeSet = new Set<string>();
+            values.forEach(year => {
+                decadeSet.add(String(Math.floor(parseInt(year) / 10) * 10));
+            });
+            return Array.from(decadeSet).sort();
+        }
+
+        this.usesDecades = false;
+        return values;
     }
 
     private normalizeToStrings(raw: unknown): string[] {
@@ -112,7 +169,14 @@ export class FilterGroup<T extends LibraryItemModel> {
 
     private modelMatchesAny(model: T): boolean {
         const raw = model.data?.data?.[this.code];
-        return this.normalizeToStrings(raw).some(v => this.selectedValues.has(v));
+        const values = this.normalizeToStrings(raw);
+        if (this.usesDecades) {
+            return values.some(year => {
+                const decade = String(Math.floor(parseInt(year) / 10) * 10);
+                return this.selectedValues.has(decade);
+            });
+        }
+        return values.some(v => this.selectedValues.has(v));
     }
 
     private renderPanel(values: string[]): HTMLElement {
@@ -154,8 +218,11 @@ export class FilterGroup<T extends LibraryItemModel> {
             checkbox.addEventListener('change', listener);
             this.checkboxListeners.push({ el: checkbox, fn: listener });
 
+            const displayLabel = this.usesDecades
+                ? `${String(parseInt(value) % 100).padStart(2, '0')}s`
+                : value;
             label.appendChild(checkbox);
-            label.appendChild(document.createTextNode(` ${value}`));
+            label.appendChild(document.createTextNode(` ${displayLabel}`));
             li.appendChild(label);
             list.appendChild(li);
         });
