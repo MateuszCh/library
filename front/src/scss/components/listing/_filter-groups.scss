@@ -130,8 +130,12 @@ details[open] .filter-group-summary::after {
     flex-shrink: 0;
 }
 
+.listing-filter-button-container {
+    display: flex;
+}
+
 .listing-filter-button {
-    padding: 0 12px;
+    padding: 0 15px;
     background-color: white;
     border: none;
     @extend .inter-regular;

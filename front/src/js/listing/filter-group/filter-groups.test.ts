@@ -342,6 +342,7 @@ describe('FilterGroups — modal', () => {
     });
 
     it('closing modal returns filterGroups container to sidebar', () => {
+        vi.useFakeTimers();
         const { sidebar, filterGroups, buttonContainer, modalClose } = setupDOM();
         const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
         fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
@@ -349,8 +350,10 @@ describe('FilterGroups — modal', () => {
         const btn = buttonContainer.querySelector<HTMLButtonElement>('button')!;
         btn.click();
         modalClose.click();
+        vi.advanceTimersByTime(300);
 
         expect(sidebar.contains(filterGroups)).toBe(true);
+        vi.useRealTimers();
     });
 
     it('does not throw when modal elements are absent', () => {

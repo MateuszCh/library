@@ -107,33 +107,32 @@ export class FilterGroups<T extends LibraryItemModel> {
     }
 
     private animateOpen(el: HTMLDetailsElement): void {
-        const list = el.querySelector<HTMLElement>('.filter-group-list');
-        if (!list || typeof list.animate !== 'function') return;
-        const target = Math.min(list.scrollHeight, 300);
-        list.style.overflowY = 'hidden';
-        const anim = list.animate(
-            [{ height: '0px' }, { height: `${target}px` }],
+        if (typeof el.animate !== 'function') return;
+        const summary = el.querySelector<HTMLElement>('summary');
+        const startHeight = summary ? summary.offsetHeight : 0;
+        const endHeight = el.scrollHeight;
+        const anim = el.animate(
+            [{ height: `${startHeight}px` }, { height: `${endHeight}px` }],
             { duration: 200, easing: 'ease', fill: 'backwards' }
         );
-        anim.onfinish = () => { anim.cancel(); list.style.overflowY = ''; };
+        anim.onfinish = () => { anim.cancel(); };
     }
 
     private animateClose(el: HTMLDetailsElement): void {
-        const list = el.querySelector<HTMLElement>('.filter-group-list');
+        const summary = el.querySelector<HTMLElement>('summary');
         const finish = () => {
             el.classList.remove('filter-group-closing');
             el.removeAttribute('open');
-            if (list) list.style.overflowY = '';
         };
-        if (!list || typeof list.animate !== 'function') { finish(); return; }
+        if (typeof el.animate !== 'function') { finish(); return; }
         el.classList.add('filter-group-closing');
-        const current = list.offsetHeight;
-        list.style.overflowY = 'hidden';
-        const anim = list.animate(
-            [{ height: `${current}px` }, { height: '0px' }],
-            { duration: 200, easing: 'ease' }
+        const startHeight = el.offsetHeight;
+        const endHeight = summary ? summary.offsetHeight : 0;
+        const anim = el.animate(
+            [{ height: `${startHeight}px` }, { height: `${endHeight}px` }],
+            { duration: 200, easing: 'ease', fill: 'forwards' }
         );
-        anim.onfinish = () => { anim.cancel(); finish(); };
+        anim.onfinish = () => { finish(); anim.cancel(); };
     }
 
     private bindToggleListeners(): void {
@@ -246,11 +245,13 @@ export class FilterGroups<T extends LibraryItemModel> {
     }
 
     private closeModal(): void {
-        const filterSidebar = document.getElementById('filter-sidebar');
-        if (this.sidebarContainer && filterSidebar) {
-            filterSidebar.appendChild(this.sidebarContainer);
-        }
         this.modalOverlay?.classList.remove(MODAL_OPEN_CLASS);
+        setTimeout(() => {
+            const filterSidebar = document.getElementById('filter-sidebar');
+            if (this.sidebarContainer && filterSidebar) {
+                filterSidebar.appendChild(this.sidebarContainer);
+            }
+        }, 300);
     }
 
     private get storageKey(): string {
