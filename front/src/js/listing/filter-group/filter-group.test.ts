@@ -480,6 +480,16 @@ describe('FilterGroup.updateAvailableValues() — decade mode', () => {
         const group = makeGroup({ code: 'artist', type: 'string' });
         expect(() => group.updateAvailableValues([])).not.toThrow();
     });
+
+    it('skips list items that have no checkbox', () => {
+        const group = makeGroup({ code: 'artist', type: 'string' });
+        group.buildValues([makeModel({ artist: 'Pink Floyd' })]);
+        const list = group.getElement()!.querySelector('.filter-group-list')!;
+        const li = document.createElement('li');
+        li.className = 'filter-group-item';
+        list.appendChild(li);
+        expect(() => group.updateAvailableValues([])).not.toThrow();
+    });
 });
 
 // ─── setSelected + buildValues interaction ────────────────────────────────────

@@ -647,6 +647,56 @@ describe('FilterGroups — animation', () => {
         expect(typeof anim.onfinish).toBe('function');
     });
 
+    it('skips group with details but no summary in bindToggleListeners', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        const detailsWithoutSummary = document.createElement('details');
+        (fg as unknown as { groups: unknown[] }).groups.push({
+            buildValues: vi.fn(),
+            getElement: vi.fn(() => detailsWithoutSummary),
+            filter: (m: unknown[]) => m,
+            updateAvailableValues: vi.fn(),
+            selected: [],
+            getValueLabel: (v: string) => v
+        });
+        expect(() => fg.buildValues([makeModel({ genre: ['Rock'] })])).not.toThrow();
+    });
+
+    it('animateOpen uses 0 startHeight when details has no summary', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'] })]);
+
+        const details = document.createElement('details');
+        const anim = { cancel: vi.fn(), onfinish: null as null | (() => void) };
+        (details as unknown as Record<string, unknown>)['animate'] = vi.fn(() => anim);
+
+        (fg as unknown as { animateOpen: (el: HTMLDetailsElement) => void }).animateOpen(details);
+
+        expect((details as unknown as Record<string, unknown>)['animate']).toHaveBeenCalledWith(
+            [{ height: '0px' }, { height: '0px' }],
+            expect.objectContaining({ fill: 'backwards' })
+        );
+    });
+
+    it('animateClose uses 0 endHeight when details has no summary', () => {
+        const { filterGroups, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'] })]);
+
+        const details = document.createElement('details');
+        details.setAttribute('open', '');
+        const anim = { cancel: vi.fn(), onfinish: null as null | (() => void) };
+        (details as unknown as Record<string, unknown>)['animate'] = vi.fn(() => anim);
+
+        (fg as unknown as { animateClose: (el: HTMLDetailsElement) => void }).animateClose(details);
+
+        expect((details as unknown as Record<string, unknown>)['animate']).toHaveBeenCalledWith(
+            [{ height: '0px' }, { height: '0px' }],
+            expect.objectContaining({ fill: 'forwards' })
+        );
+    });
+
     it('animateClose onfinish removes open attribute, closing class, and calls cancel', () => {
         const { filterGroups, buttonContainer } = setupDOM();
         const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
