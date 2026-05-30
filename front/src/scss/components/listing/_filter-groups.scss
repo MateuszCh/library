@@ -1,6 +1,10 @@
 @use '../../abstracts/colors' as colors;
 @use '../../abstracts/typography';
 
+details[open].filter-group-closing .filter-group-summary::after {
+    transform: rotate(0deg);
+}
+
 .listing-filter-groups {
     // padding-top: 8px;
 }

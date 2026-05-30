@@ -21,7 +21,7 @@ export class FilterGroups<T extends LibraryItemModel> {
     private listing: Listing<T>;
     private sidebarContainer?: HTMLElement;
     private buttonContainer?: HTMLElement;
-    private toggleListeners: Array<{ el: HTMLDetailsElement; fn: EventListener }> = [];
+    private summaryListeners: Array<{ el: HTMLElement; fn: EventListener }> = [];
     private chipsContainer: HTMLDivElement = document.createElement('div');
 
     private modalOverlay?: HTMLElement;
@@ -82,8 +82,8 @@ export class FilterGroups<T extends LibraryItemModel> {
     }
 
     clear(): void {
-        this.toggleListeners.forEach(({ el, fn }) => el.removeEventListener('toggle', fn));
-        this.toggleListeners = [];
+        this.summaryListeners.forEach(({ el, fn }) => el.removeEventListener('click', fn));
+        this.summaryListeners = [];
         this.groups.forEach(g => g.clear());
         this.modalOverlay?.removeEventListener('click', this.onModalOverlayClick);
         this.modalCloseButton?.removeEventListener('click', this.onModalClose);
@@ -106,24 +106,61 @@ export class FilterGroups<T extends LibraryItemModel> {
         });
     }
 
+    private animateOpen(el: HTMLDetailsElement): void {
+        const list = el.querySelector<HTMLElement>('.filter-group-list');
+        if (!list || typeof list.animate !== 'function') return;
+        const target = Math.min(list.scrollHeight, 300);
+        list.style.overflowY = 'hidden';
+        const anim = list.animate(
+            [{ height: '0px' }, { height: `${target}px` }],
+            { duration: 200, easing: 'ease', fill: 'backwards' }
+        );
+        anim.onfinish = () => { anim.cancel(); list.style.overflowY = ''; };
+    }
+
+    private animateClose(el: HTMLDetailsElement): void {
+        const list = el.querySelector<HTMLElement>('.filter-group-list');
+        const finish = () => {
+            el.classList.remove('filter-group-closing');
+            el.removeAttribute('open');
+            if (list) list.style.overflowY = '';
+        };
+        if (!list || typeof list.animate !== 'function') { finish(); return; }
+        el.classList.add('filter-group-closing');
+        const current = list.offsetHeight;
+        list.style.overflowY = 'hidden';
+        const anim = list.animate(
+            [{ height: `${current}px` }, { height: '0px' }],
+            { duration: 200, easing: 'ease' }
+        );
+        anim.onfinish = () => { anim.cancel(); finish(); };
+    }
+
     private bindToggleListeners(): void {
-        this.toggleListeners.forEach(({ el, fn }) => el.removeEventListener('toggle', fn));
-        this.toggleListeners = [];
+        this.summaryListeners.forEach(({ el, fn }) => el.removeEventListener('click', fn));
+        this.summaryListeners = [];
         this.groups.forEach(group => {
             const el = group.getElement() as HTMLDetailsElement | undefined;
             if (!el) return;
-            const fn: EventListener = () => {
+            const summary = el.querySelector('summary');
+            if (!summary) return;
+            const fn: EventListener = (e: Event) => {
+                e.preventDefault();
                 if (el.open) {
+                    this.animateClose(el);
+                } else {
                     this.groups.forEach(other => {
                         const otherEl = other.getElement() as HTMLDetailsElement | undefined;
                         if (otherEl && otherEl !== el && otherEl.open) {
-                            otherEl.removeAttribute('open');
+                            this.animateClose(otherEl);
                         }
                     });
+                    el.setAttribute('open', '');
+                    this.animateOpen(el);
                 }
             };
-            el.addEventListener('toggle', fn);
-            this.toggleListeners.push({ el, fn });
+            summary.addEventListener('click', fn);
+            this.summaryListeners.push({ el: summary, fn });
         });
     }
 
