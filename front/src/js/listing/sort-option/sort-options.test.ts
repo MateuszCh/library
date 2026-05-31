@@ -45,10 +45,15 @@ function makeModel(data: Record<string, unknown>): LibraryItemModel {
     return { id: Math.random(), data: { data } } as unknown as LibraryItemModel;
 }
 
-function mockAnimate(el: HTMLElement): ReturnType<typeof vi.fn> {
-    const anim = { onfinish: null as (() => void) | null, cancel: vi.fn() };
+interface MockAnim {
+    onfinish: (() => void) | null;
+    cancel: ReturnType<typeof vi.fn>;
+}
+
+function mockAnimate(el: HTMLElement): MockAnim {
+    const anim: MockAnim = { onfinish: null, cancel: vi.fn() };
     (el as any).animate = vi.fn().mockReturnValue(anim);
-    return anim as any;
+    return anim;
 }
 
 beforeEach(() => {
