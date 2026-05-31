@@ -35,7 +35,7 @@ describe('main.ts', () => {
         await import('./main');
         const { Library } = await import('./js/library');
         expect(Library).toHaveBeenCalled();
-        const instance = vi.mocked(Library).mock.instances[0] as Record<string, unknown>;
+        const instance = vi.mocked(Library).mock.instances[0] as unknown as Record<string, unknown>;
         expect(vi.mocked(instance['init'] as ReturnType<typeof vi.fn>)).toHaveBeenCalled();
     });
 

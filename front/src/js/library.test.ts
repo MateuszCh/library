@@ -23,7 +23,7 @@ describe('Library', () => {
     it('calls init() on the created RecordsListing', async () => {
         const lib = new Library();
         await lib.init();
-        const instance = vi.mocked(RecordsListing).mock.instances[0] as Record<string, unknown>;
+        const instance = vi.mocked(RecordsListing).mock.instances[0] as unknown as Record<string, unknown>;
         expect(vi.mocked(instance['init'] as ReturnType<typeof vi.fn>)).toHaveBeenCalledOnce();
     });
 });

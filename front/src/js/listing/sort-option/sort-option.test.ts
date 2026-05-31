@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { SortOption, type ISortOptionConfig } from './sort-option';
 import type { SortOptions } from './sort-options';
-import type { LibraryItemModel, ILibraryItem } from '../library-item/library-item';
+import type { LibraryItemModel } from '../library-item/library-item';
 
 function makeSortOptions(): SortOptions<LibraryItemModel> {
     return {
