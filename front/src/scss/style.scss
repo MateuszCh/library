@@ -24,6 +24,61 @@ body {
     padding-right: 16px;
 }
 
+.app-layout {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    position: relative;
+}
+
+.filter-sideber-container {
+    position: absolute;
+    right: calc(100% + 24px);
+    top: 0;
+    bottom: 0;
+}
+
+.filter-sidebar {
+    width: 200px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 86px;
+    margin-top: 199px;
+}
+
+.app-main {
+    flex: 1;
+    min-width: 0;
+}
+
+@media (max-width: 1040px) {
+    .app-layout {
+        display: block;
+    }
+
+    .filter-sidebar {
+        display: none;
+    }
+}
+
+@media (min-width: 1041px) {
+    .listing-filter-button-container {
+        display: none;
+    }
+
+    .listing-sort-button-container {
+        display: none;
+    }
+
+    .filter-modal-overlay {
+        display: none !important;
+    }
+
+    .sort-modal-overlay {
+        display: none !important;
+    }
+}
+
 .title {
     @extend .pacifico-regular;
     font-size: 64px;
