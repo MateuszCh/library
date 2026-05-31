@@ -22,6 +22,7 @@ function makeModel(data: Record<string, unknown>): LibraryItemModel {
 
 function setupDOM(): {
     sidebar: HTMLElement;
+    chipsSidebar: HTMLElement;
     filterGroups: HTMLElement;
     buttonContainer: HTMLElement;
     modalOverlay: HTMLElement;
@@ -30,6 +31,7 @@ function setupDOM(): {
 } {
     document.body.innerHTML = `
         <div id="filter-sidebar">
+            <div id="listing-filter-chips-sidebar"></div>
             <div id="listing-filter-groups"></div>
         </div>
         <div id="listing-filter-button"></div>
@@ -42,6 +44,7 @@ function setupDOM(): {
     `;
     return {
         sidebar: document.getElementById('filter-sidebar')!,
+        chipsSidebar: document.getElementById('listing-filter-chips-sidebar')!,
         filterGroups: document.getElementById('listing-filter-groups')!,
         buttonContainer: document.getElementById('listing-filter-button')!,
         modalOverlay: document.getElementById('filter-modal-overlay')!,
@@ -83,12 +86,12 @@ describe('FilterGroups.filter()', () => {
         ];
         fg.buildValues(models);
 
-        // Manually tick genre=Rock and artist=Pink Floyd
+        // genre is 1st child, artist is 2nd child (chips are now in chipsSidebar)
         const genreCheckbox = filterGroups.querySelector<HTMLInputElement>(
-            '.filter-group:nth-child(2) input[value="Rock"]'
+            '.filter-group:nth-child(1) input[value="Rock"]'
         )!;
         const artistCheckbox = filterGroups.querySelector<HTMLInputElement>(
-            '.filter-group:nth-child(3) input[value="Pink Floyd"]'
+            '.filter-group:nth-child(2) input[value="Pink Floyd"]'
         )!;
         genreCheckbox.checked = true;
         genreCheckbox.dispatchEvent(new Event('change'));
@@ -369,8 +372,8 @@ describe('FilterGroups — modal', () => {
         );
     });
 
-    it('opening modal moves filterGroups container into modal body', () => {
-        const { filterGroups, buttonContainer, modalBody } = setupDOM();
+    it('opening modal moves filterGroups and chipsSidebar into modal body', () => {
+        const { filterGroups, chipsSidebar, buttonContainer, modalBody } = setupDOM();
         const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
         fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
 
@@ -378,11 +381,12 @@ describe('FilterGroups — modal', () => {
         btn.click();
 
         expect(modalBody.contains(filterGroups)).toBe(true);
+        expect(modalBody.contains(chipsSidebar)).toBe(true);
     });
 
-    it('closing modal returns filterGroups container to sidebar', () => {
+    it('closing modal returns filterGroups and chipsSidebar to sidebar', () => {
         vi.useFakeTimers();
-        const { sidebar, filterGroups, buttonContainer, modalClose } = setupDOM();
+        const { sidebar, chipsSidebar, filterGroups, buttonContainer, modalClose } = setupDOM();
         const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
         fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
 
@@ -392,6 +396,21 @@ describe('FilterGroups — modal', () => {
         vi.advanceTimersByTime(300);
 
         expect(sidebar.contains(filterGroups)).toBe(true);
+        expect(sidebar.contains(chipsSidebar)).toBe(true);
+        vi.useRealTimers();
+    });
+
+    it('chipsSidebar is the first child of filter-sidebar after modal closes', () => {
+        vi.useFakeTimers();
+        const { sidebar, chipsSidebar, filterGroups, buttonContainer, modalClose } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
+
+        buttonContainer.querySelector<HTMLButtonElement>('button')!.click();
+        modalClose.click();
+        vi.advanceTimersByTime(300);
+
+        expect(sidebar.firstElementChild).toBe(chipsSidebar);
         vi.useRealTimers();
     });
 
@@ -408,6 +427,36 @@ describe('FilterGroups — modal', () => {
             () =>
                 new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer)
         ).not.toThrow();
+    });
+
+    it('openModal and closeModal work without chipsSidebarContainer (moves filterGroups only)', () => {
+        vi.useFakeTimers();
+        document.body.innerHTML = `
+            <div id="filter-sidebar">
+                <div id="listing-filter-groups"></div>
+            </div>
+            <div id="listing-filter-button"></div>
+            <div id="filter-modal-overlay">
+                <div id="filter-modal">
+                    <button id="filter-modal-close"></button>
+                    <div id="filter-modal-body"></div>
+                </div>
+            </div>
+        `;
+        const filterGroups = document.getElementById('listing-filter-groups')!;
+        const buttonContainer = document.getElementById('listing-filter-button')!;
+        const modalBody = document.getElementById('filter-modal-body')!;
+        const sidebar = document.getElementById('filter-sidebar')!;
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'] })]);
+
+        buttonContainer.querySelector<HTMLButtonElement>('button')!.click();
+        expect(modalBody.contains(filterGroups)).toBe(true);
+
+        document.getElementById('filter-modal-close')!.click();
+        vi.advanceTimersByTime(300);
+        expect(sidebar.contains(filterGroups)).toBe(true);
+        vi.useRealTimers();
     });
 
     it('clicking button does not throw when modalBody is absent', () => {
@@ -443,6 +492,46 @@ describe('FilterGroups — modal', () => {
     });
 });
 
+// ─── chips sidebar (desktop) ──────────────────────────────────────────────────
+
+describe('FilterGroups — chips sidebar container', () => {
+    it('renders chips into #listing-filter-chips-sidebar when present', () => {
+        const { filterGroups, chipsSidebar, buttonContainer } = setupDOM();
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
+
+        const checkbox = filterGroups.querySelector<HTMLInputElement>('input[value="Rock"]')!;
+        checkbox.checked = true;
+        checkbox.dispatchEvent(new Event('change'));
+
+        expect(chipsSidebar.querySelector('.filter-chip')).not.toBeNull();
+        expect(filterGroups.querySelector('.filter-chip')).toBeNull();
+    });
+
+    it('falls back to sidebarContainer for chips when #listing-filter-chips-sidebar is absent', () => {
+        document.body.innerHTML = `
+            <div id="filter-sidebar">
+                <div id="listing-filter-groups"></div>
+            </div>
+            <div id="listing-filter-button"></div>
+            <div id="filter-modal-overlay">
+                <div id="filter-modal-body"></div>
+                <button id="filter-modal-close"></button>
+            </div>
+        `;
+        const filterGroups = document.getElementById('listing-filter-groups')!;
+        const buttonContainer = document.getElementById('listing-filter-button')!;
+        const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
+        fg.buildValues([makeModel({ genre: ['Rock'] })]);
+
+        const checkbox = filterGroups.querySelector<HTMLInputElement>('input[value="Rock"]')!;
+        checkbox.checked = true;
+        checkbox.dispatchEvent(new Event('change'));
+
+        expect(filterGroups.querySelector('.filter-chip')).not.toBeNull();
+    });
+});
+
 // ─── renderSidebar defensive guard ───────────────────────────────────────────
 
 describe('FilterGroups.buildValues() — group returning undefined element', () => {
@@ -450,7 +539,6 @@ describe('FilterGroups.buildValues() — group returning undefined element', () 
         const { filterGroups, buttonContainer } = setupDOM();
         const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
 
-        // Patch internal groups to include one that always returns undefined
         const internalGroups = (
             fg as unknown as { groups: Array<{ buildValues: () => void; getElement: () => HTMLElement | undefined; filter: (m: unknown[]) => unknown[]; updateAvailableValues: () => void; selected: string[]; getValueLabel: (v: string) => string }> }
         ).groups;
@@ -466,7 +554,8 @@ describe('FilterGroups.buildValues() — group returning undefined element', () 
         expect(() =>
             fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })])
         ).not.toThrow();
-        expect(filterGroups.children.length).toBe(3); // chipsContainer + 2 real groups (undefined one skipped)
+        // filterGroups has 2 real groups only (chips are in chipsSidebar)
+        expect(filterGroups.children.length).toBe(2);
     });
 });
 
@@ -474,7 +563,7 @@ describe('FilterGroups.buildValues() — group returning undefined element', () 
 
 describe('FilterGroups — filter chips', () => {
     it('renders a chip for each selected value', () => {
-        const { filterGroups, buttonContainer } = setupDOM();
+        const { filterGroups, chipsSidebar, buttonContainer } = setupDOM();
         const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
         fg.buildValues([
             makeModel({ genre: ['Rock'], artist: 'Pink Floyd' }),
@@ -485,13 +574,13 @@ describe('FilterGroups — filter chips', () => {
         checkbox.checked = true;
         checkbox.dispatchEvent(new Event('change'));
 
-        const chips = filterGroups.querySelectorAll('.filter-chip');
+        const chips = chipsSidebar.querySelectorAll('.filter-chip');
         expect(chips.length).toBe(1);
         expect(chips[0].textContent).toContain('Rock');
     });
 
     it('removes chip and deselects value when × is clicked', () => {
-        const { filterGroups, buttonContainer } = setupDOM();
+        const { filterGroups, chipsSidebar, buttonContainer } = setupDOM();
         const listing = makeListing();
         const fg = new FilterGroups(CONFIGS, listing, filterGroups, buttonContainer);
         fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
@@ -500,22 +589,22 @@ describe('FilterGroups — filter chips', () => {
         checkbox.checked = true;
         checkbox.dispatchEvent(new Event('change'));
 
-        const removeBtn = filterGroups.querySelector<HTMLButtonElement>('.filter-chip-remove')!;
+        const removeBtn = chipsSidebar.querySelector<HTMLButtonElement>('.filter-chip-remove')!;
         removeBtn.click();
 
-        expect(filterGroups.querySelectorAll('.filter-chip').length).toBe(0);
+        expect(chipsSidebar.querySelectorAll('.filter-chip').length).toBe(0);
         expect(listing.onFilterUpdate).toHaveBeenCalledTimes(2);
     });
 
     it('shows no chips when no filters are active', () => {
-        const { filterGroups, buttonContainer } = setupDOM();
+        const { filterGroups, chipsSidebar, buttonContainer } = setupDOM();
         const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
         fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
-        expect(filterGroups.querySelectorAll('.filter-chip').length).toBe(0);
+        expect(chipsSidebar.querySelectorAll('.filter-chip').length).toBe(0);
     });
 
     it('shows reset button when filters are active', () => {
-        const { filterGroups, buttonContainer } = setupDOM();
+        const { filterGroups, chipsSidebar, buttonContainer } = setupDOM();
         const fg = new FilterGroups(CONFIGS, makeListing(), filterGroups, buttonContainer);
         fg.buildValues([makeModel({ genre: ['Rock'], artist: 'Pink Floyd' })]);
 
@@ -523,11 +612,11 @@ describe('FilterGroups — filter chips', () => {
         checkbox.checked = true;
         checkbox.dispatchEvent(new Event('change'));
 
-        expect(filterGroups.querySelector('.filter-chips-reset')).not.toBeNull();
+        expect(chipsSidebar.querySelector('.filter-chips-reset')).not.toBeNull();
     });
 
     it('reset button clears all filters and updates listing', () => {
-        const { filterGroups, buttonContainer } = setupDOM();
+        const { filterGroups, chipsSidebar, buttonContainer } = setupDOM();
         const listing = makeListing();
         const fg = new FilterGroups(CONFIGS, listing, filterGroups, buttonContainer);
         fg.buildValues([
@@ -540,10 +629,10 @@ describe('FilterGroups — filter chips', () => {
         filterGroups.querySelector<HTMLInputElement>('input[value="Pink Floyd"]')!.checked = true;
         filterGroups.querySelector<HTMLInputElement>('input[value="Pink Floyd"]')!.dispatchEvent(new Event('change'));
 
-        filterGroups.querySelector<HTMLButtonElement>('.filter-chips-reset')!.click();
+        chipsSidebar.querySelector<HTMLButtonElement>('.filter-chips-reset')!.click();
 
-        expect(filterGroups.querySelectorAll('.filter-chip').length).toBe(0);
-        expect(filterGroups.querySelector('.filter-chips-reset')).toBeNull();
+        expect(chipsSidebar.querySelectorAll('.filter-chip').length).toBe(0);
+        expect(chipsSidebar.querySelector('.filter-chips-reset')).toBeNull();
         expect(fg.filter([
             makeModel({ genre: ['Rock'], artist: 'Pink Floyd' }),
             makeModel({ genre: ['Jazz'], artist: 'Miles Davis' })
@@ -777,5 +866,16 @@ describe('FilterGroups — no container', () => {
         const fg = new FilterGroups(CONFIGS, makeListing(), undefined, undefined);
         const models = [makeModel({ genre: ['Rock'] })];
         expect(fg.filter(models)).toHaveLength(1);
+    });
+
+    it('closeModal does not throw when sidebarContainer is undefined but filter-sidebar exists', () => {
+        vi.useFakeTimers();
+        document.body.innerHTML = '<div id="filter-sidebar"></div>';
+        const fg = new FilterGroups(CONFIGS, makeListing(), undefined, undefined);
+        expect(() => {
+            (fg as any).closeModal();
+            vi.advanceTimersByTime(300);
+        }).not.toThrow();
+        vi.useRealTimers();
     });
 });

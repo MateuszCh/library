@@ -11,7 +11,8 @@ const SEARCH_STORAGE_KEY = 'listing-search-value';
 
 const LISTING_SEARCH_ID = 'listing-search';
 const LISTING_RESULTS_ID = 'listing-results';
-const LISTING_SORT_OPTIONS_ID = 'listing-sort-options';
+const LISTING_SORT_SIDEBAR_ID = 'listing-sort-sidebar';
+const LISTING_SORT_BUTTON_ID = 'listing-sort-button';
 const LISTING_FILTER_GROUPS_ID = 'listing-filter-groups';
 const LISTING_FILTER_BUTTON_ID = 'listing-filter-button';
 const LISTING_COUNT_ID = 'listing-count';
@@ -23,7 +24,8 @@ export abstract class Listing<T extends LibraryItemModel<ILibraryItem>> {
     protected abstract title: string;
     private resultsContainer?: HTMLElement;
     private search?: HTMLInputElement;
-    private sortOptionsContainer?: HTMLElement;
+    private sortSidebarContainer?: HTMLElement;
+    private sortButtonContainer?: HTMLElement;
     private filterGroupsContainer?: HTMLElement;
     private filterButtonContainer?: HTMLElement;
     private searchEventListener?: EventListener;
@@ -45,8 +47,10 @@ export abstract class Listing<T extends LibraryItemModel<ILibraryItem>> {
         this.search =
             (document.getElementById(LISTING_SEARCH_ID) as HTMLInputElement) ||
             undefined;
-        this.sortOptionsContainer =
-            document.getElementById(LISTING_SORT_OPTIONS_ID) || undefined;
+        this.sortSidebarContainer =
+            document.getElementById(LISTING_SORT_SIDEBAR_ID) || undefined;
+        this.sortButtonContainer =
+            document.getElementById(LISTING_SORT_BUTTON_ID) || undefined;
         this.filterGroupsContainer =
             document.getElementById(LISTING_FILTER_GROUPS_ID) || undefined;
         this.filterButtonContainer =
@@ -80,7 +84,8 @@ export abstract class Listing<T extends LibraryItemModel<ILibraryItem>> {
         this.sortOptions = new SortOptions(
             this.sortOptionsConfigs,
             this,
-            this.sortOptionsContainer
+            this.sortSidebarContainer,
+            this.sortButtonContainer
         );
         this.filterGroups?.clear();
         this.filterGroups = new FilterGroups(

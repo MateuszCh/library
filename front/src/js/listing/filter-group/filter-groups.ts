@@ -26,6 +26,7 @@ export class FilterGroups<T extends LibraryItemModel> {
     private savedScrollY: number = 0;
     private chipsContainer: HTMLDivElement = document.createElement('div');
 
+    private chipsSidebarContainer?: HTMLElement;
     private modalOverlay?: HTMLElement;
     private modalBody?: HTMLElement;
     private modalCloseButton?: HTMLElement;
@@ -49,6 +50,8 @@ export class FilterGroups<T extends LibraryItemModel> {
         this.sidebarContainer = sidebarContainer;
         this.buttonContainer = buttonContainer;
 
+        this.chipsSidebarContainer =
+            document.getElementById('listing-filter-chips-sidebar') || undefined;
         this.modalOverlay =
             document.getElementById(FILTER_MODAL_OVERLAY_ID) || undefined;
         this.modalBody =
@@ -219,7 +222,12 @@ export class FilterGroups<T extends LibraryItemModel> {
     private renderSidebar(): void {
         if (!this.sidebarContainer) return;
         this.sidebarContainer.innerHTML = '';
-        this.sidebarContainer.appendChild(this.chipsContainer);
+        if (this.chipsSidebarContainer) {
+            this.chipsSidebarContainer.innerHTML = '';
+            this.chipsSidebarContainer.appendChild(this.chipsContainer);
+        } else {
+            this.sidebarContainer.appendChild(this.chipsContainer);
+        }
         this.groups.forEach(group => {
             const el = group.getElement();
             if (el) {
@@ -250,6 +258,9 @@ export class FilterGroups<T extends LibraryItemModel> {
 
     private openModal(): void {
         if (!this.modalBody || !this.sidebarContainer) return;
+        if (this.chipsSidebarContainer) {
+            this.modalBody.appendChild(this.chipsSidebarContainer);
+        }
         this.modalBody.appendChild(this.sidebarContainer);
         this.modalOverlay?.classList.add(MODAL_OPEN_CLASS);
         this.savedScrollY = window.scrollY;
@@ -268,8 +279,13 @@ export class FilterGroups<T extends LibraryItemModel> {
         window.scrollTo(0, this.savedScrollY);
         setTimeout(() => {
             const filterSidebar = document.getElementById('filter-sidebar');
-            if (this.sidebarContainer && filterSidebar) {
-                filterSidebar.appendChild(this.sidebarContainer);
+            if (filterSidebar) {
+                if (this.chipsSidebarContainer) {
+                    filterSidebar.insertAdjacentElement('afterbegin', this.chipsSidebarContainer);
+                }
+                if (this.sidebarContainer) {
+                    filterSidebar.appendChild(this.sidebarContainer);
+                }
             }
         }, 300);
     }

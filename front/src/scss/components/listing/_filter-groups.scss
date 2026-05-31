@@ -144,20 +144,9 @@ details[open] .filter-group-summary::after {
     margin-left: 8px;
     border-radius: 16px;
     font-size: 14px;
-    transition: background-color 0.1s ease-in-out;
-
     svg {
-        transition: stroke 0.1s ease-in-out;
         position: relative;
         top: 2px;
         stroke: colors.$primary;
-    }
-
-    &:hover {
-        background-color: colors.$primary-darker;
-
-        svg {
-            stroke: white;
-        }
     }
 }

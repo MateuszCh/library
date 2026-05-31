@@ -51,7 +51,7 @@ body {
     min-width: 0;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 1040px) {
     .app-layout {
         display: block;
     }
@@ -61,12 +61,20 @@ body {
     }
 }
 
-@media (min-width: 701px) {
+@media (min-width: 1041px) {
     .listing-filter-button-container {
         display: none;
     }
 
+    .listing-sort-button-container {
+        display: none;
+    }
+
     .filter-modal-overlay {
+        display: none !important;
+    }
+
+    .sort-modal-overlay {
         display: none !important;
     }
 }

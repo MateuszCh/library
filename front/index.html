@@ -27,6 +27,9 @@
             <div class="filter-sideber-container">
                 <aside class="filter-sidebar"
                        id="filter-sidebar">
+                    <div id="listing-filter-chips-sidebar"></div>
+                    <div id="listing-sort-sidebar"
+                         class="listing-sort-sidebar"></div>
                     <div id="listing-filter-groups"
                          class="listing-filter-groups"></div>
                 </aside>
@@ -52,9 +55,8 @@
                                placeholder="Title, artist, album, release year, etc." />
                         <div id="listing-filter-button"
                              class="listing-filter-button-container"></div>
-                        <div id="listing-sort-options"
-                             class="listing-sort-options">
-                        </div>
+                        <div id="listing-sort-button"
+                             class="listing-sort-button-container"></div>
                     </form>
                 </div>
                 <div class="listing">
@@ -77,6 +79,21 @@
                 </div>
                 <div class="filter-modal-body"
                      id="filter-modal-body"></div>
+            </div>
+        </div>
+
+        <div class="sort-modal-overlay"
+             id="sort-modal-overlay">
+            <div class="sort-modal">
+                <div class="sort-modal-header">
+                    <span class="sort-modal-title">Sort</span>
+                    <button type="button"
+                            class="sort-modal-close"
+                            id="sort-modal-close"
+                            aria-label="Close sort">✕</button>
+                </div>
+                <div class="sort-modal-body"
+                     id="sort-modal-body"></div>
             </div>
         </div>
     </div>
